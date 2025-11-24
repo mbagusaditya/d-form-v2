@@ -1,0 +1,16 @@
+FROM dunglas/frankenphp:php8.3-alpine
+
+RUN install-php-extensions \
+    pcntl \
+    zip \
+    bcmath \
+    intl \
+    imagick \
+    pdo_mysql \
+    redis
+
+COPY . /app
+
+ENTRYPOINT ["php", "artisan", "octane:frankenphp"]
+
+CMD ["--watch", "--workers=1", "--max-requests=1"]
