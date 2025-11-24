@@ -13,6 +13,9 @@ on:
             - main
             - master
 
+permissions:
+    contents: write # <--- TAMBAHKAN DI SINI
+
 jobs:
     format-code:
         runs-on: ubuntu-latest
