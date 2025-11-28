@@ -15,6 +15,7 @@
             }
         </style>
 
+        @livewireStyles
         @filamentStyles
         @vite('resources/css/app.css')
     </head>
@@ -24,6 +25,7 @@
 
         @livewire('notifications')
 
+        @livewireScriptConfig
         @filamentScripts
         @vite('resources/js/app.js')
     </body>

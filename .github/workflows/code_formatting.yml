@@ -85,7 +85,7 @@ jobs:
               uses: EndBug/add-and-commit@v9
               with:
                   # File yang di-commit adalah semua perubahan
-                  message: 'Style: Apply automatic code formatting via GitHub Actions'
+                  message: '🖌️ Style: Apply automatic code formatting via GitHub Actions'
                   # Gunakan token GITHUB_TOKEN bawaan untuk push
                   github_token: ${{ secrets.GITHUB_TOKEN }}
                   # Nama dan email bot

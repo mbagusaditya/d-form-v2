@@ -19,7 +19,9 @@
         "filament/widgets": "^4.0",
         "laravel/framework": "^12.0",
         "laravel/octane": "^2.13",
-        "laravel/tinker": "^2.10.1"
+        "laravel/tinker": "^2.10.1",
+        "livewire/volt": "^1.10",
+        "spatie/laravel-permission": "^6.23"
     },
     "require-dev": {
         "barryvdh/laravel-debugbar": "^3.16",

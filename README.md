@@ -18,6 +18,7 @@ project dari Dinus Open Source Community dimana project ini merupakan sebuah web
 | mysql       | 9.0             |
 | redis       | 8.0             |
 | nodejs      | 24+             |
+| daisyui     | 5.5.5           |
 
 ### Tools development
 
