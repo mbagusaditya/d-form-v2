@@ -14,7 +14,7 @@
 
     <div class="flex flex-col justify-center gap-4">
         <a
-            href="/"
+            href="{{ route('auth.google') }}"
             class="btn btn-ghost border-base-300 dark:btn-neutral btn-lg dark:text-neutral-content w-full border"
         >
             <svg class="h-5 w-5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -40,7 +40,7 @@
         </a>
 
         <a
-            href="/"
+            href="{{ route('auth.github') }}"
             class="btn btn-ghost border-base-300 dark:btn-neutral btn-lg dark:text-neutral-content w-full border"
         >
             <svg viewBox="-2.4 -2.4 28.80 28.80" xmlns="http://www.w3.org/2000/svg" fill="#000000" class="h-5 w-5">

@@ -3,6 +3,7 @@ FROM dunglas/frankenphp:php8.3-alpine
 ARG UID=1000
 ARG GID=1000
 
+# Install required PHP extensions
 RUN install-php-extensions \
     pcntl \
     zip \
@@ -12,15 +13,35 @@ RUN install-php-extensions \
     pdo_mysql \
     redis
 
-COPY . /app
+# Install Node.js and npm for frontend build (LTS version)
+RUN apk add --no-cache nodejs npm
 
-# RUN groupadd -g $GID appuser && useradd -u $UID -g appuser -ms /bin/bash appuser
-RUN addgroup -g $GID -S appuser && adduser -u $UID -G appuser -s /bin/sh -D -S appuser
+# Install Composer (if not already available)
+RUN if ! command -v composer &> /dev/null; then \
+        curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer; \
+    fi
 
-RUN chown -R appuser:appuser /app
+# Create app directory
+WORKDIR /app
 
-ENTRYPOINT ["php", "artisan", "octane:frankenphp"]
+# Create appuser with proper permissions
+# Use numeric IDs that work on both Linux and Windows Docker
+# Try to create group and user, ignore errors if they already exist
+RUN addgroup -g $GID -S appuser || true && \
+    adduser -u $UID -G appuser -s /bin/sh -D -S appuser || true
 
+# Copy entrypoint script
+COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
+# Set working directory ownership (will be overridden by volume mounts, but helps with initial setup)
+RUN chown -R appuser:appuser /app 2>/dev/null || true
+
+# Switch to appuser for running commands
 USER appuser
 
+# Set entrypoint
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+
+# Default command for development
 CMD ["--watch", "--workers=1", "--max-requests=1"]

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\LogoutController;
+use App\Http\Controllers\Auth\OAuthController;
 use App\Http\Controllers\Auth\PageController as AuthPageController;
 use App\Http\Controllers\Dashboard\Events\EventController;
 use Illuminate\Support\Facades\Route;
@@ -21,6 +22,14 @@ Route::get('/', function () {
 Route::get('/auth', AuthPageController::class)->middleware('guest')->name('auth.login');
 
 Route::post('/auth/logout', LogoutController::class)->name('auth.logout');
+
+// OAuth Routes
+Route::middleware('guest')->group(function () {
+    Route::get('/auth/google', [OAuthController::class, 'redirectToGoogle'])->name('auth.google');
+    Route::get('/auth/google/callback', [OAuthController::class, 'handleGoogleCallback'])->name('auth.google.callback');
+    Route::get('/auth/github', [OAuthController::class, 'redirectToGithub'])->name('auth.github');
+    Route::get('/auth/github/callback', [OAuthController::class, 'handleGithubCallback'])->name('auth.github.callback');
+});
 // End of Routes for Auth
 
 // Routes for redirect to /auth or /dashboard
