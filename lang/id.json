@@ -5,38 +5,27 @@
     "All rights reserved.": "Hak Cipta Dilindungi.",
     "Are you sure want to delete this content?": "Apakah anda yakin ingin menghapus konten ini?",
     "Are you sure want to restore this content?": "Apakah anda yakin ingn memulihkan konten ini?",
-<<<<<<< HEAD
-=======
     "Ascending": "Naik",
     "Aspect ratio 16:9": "Aspek rasio 16:9",
     "Can fill more than one": "Bisa mengisi lebih dari satu.",
->>>>>>> core/change-stack-to-inertia
     "Confirm Password": "Konfirmasi Password",
     "Content deleted successfully": "Konten berhasil dihapus",
     "Content restored successfully": "Konten berhasil dipulihkan",
     "Create new": "Tambah baru",
     "Create new form": "Buat form baru",
     "Create new schedule": "Buat jadwal baru",
-<<<<<<< HEAD
-    "Delete content": "Hapus konten",
-    "Delete this content.": "Hapus konten",
-=======
     "Delete": "Hapus",
     "Delete content": "Hapus konten",
     "Delete this content.": "Hapus konten",
     "Descending": "Menurun",
     "Edit": "Edit",
->>>>>>> core/change-stack-to-inertia
     "Encrypted environment file already exists.": "Enkripsi file environment sudah ada.",
     "Encrypted environment file not found.": "Enkripsi file environment tidak ditemukan.",
     "Environment file already exists.": "File environment sudah ada.",
     "Environment file not found.": "file environment tidak ditemukan.",
     "errors": "kesalahan",
     "etc": "Lain-lain",
-<<<<<<< HEAD
-=======
     "Export": "Ekspor",
->>>>>>> core/change-stack-to-inertia
     "Failed to delete this content. try again!": "konten gagal dihapus, silahkan coba lagi!",
     "Failed to restore this content. try again!": "Konten gagal dipulihkan, silahkan coba lagi!",
     "Forbidden": "Dilarang",
@@ -50,10 +39,7 @@
     "Import": "Impor",
     "Invalid filename.": "Nama file tidak valid.",
     "Invalid JSON was returned from the route.": "JSON yang tidak valid dikembalikan dari rute.",
-<<<<<<< HEAD
-=======
     "Leave blank if unchanged": "Kosongkan jika tidak diubah",
->>>>>>> core/change-stack-to-inertia
     "length": "panjang",
     "Location": "Lokasi",
     "Login": "Masuk",
@@ -73,10 +59,7 @@
     "Register": "Daftar",
     "Reset Password": "Atur Ulang Kata Sandi",
     "Reset Password Notification": "Pemberitahuan Pengaturan Ulang Kata Sandi",
-<<<<<<< HEAD
-=======
     "Restore": "Pulihkan",
->>>>>>> core/change-stack-to-inertia
     "Restore content": "Pulihkan konten",
     "Restore this content.": "Pulihkan konten.",
     "results": "hasil",
@@ -84,10 +67,7 @@
     "Search by title": "Cari berdasarkan judul",
     "Server Error": "Terjadi Kesalahan Server",
     "Service Unavailable": "Layanan Tidak Tersedia",
-<<<<<<< HEAD
-=======
     "Show QR": "Tampilkan QR",
->>>>>>> core/change-stack-to-inertia
     "Show trashed": "Lihatkan sampah",
     "Showing": "Menampilkan",
     "Sort by": "Diurutkan berdasarkan",
@@ -104,24 +84,5 @@
     "Unauthorized": "Tidak Diizinkan",
     "Verify Email Address": "Verifikasi Alamat Surel",
     "Whoops!": "Aduh!",
-<<<<<<< HEAD
-    "You are receiving this email because we received a password reset request for your account.": "Anda menerima surel ini karena kami menerima permintaan pengaturan ulang kata sandi untuk akun anda.",
-    "Notification": "Notifikasi",
-    "Can fill more than one": "Bisa mengisi lebih dari satu.",
-    "Aspect ratio 16:9": "Aspek rasio 16:9",
-    "Leave blank if unchanged": "Kosongkan jika tidak diubah",
-    "Edit": "Edit",
-    "Delete": "Hapus",
-    "Restore": "Pulihkan",
-    "Export": "Ekspor",
-    "Import": "Impor",
-    "Show QR": "Tampilkan QR",
-    "Ascending": "Naik",
-    "Descending": "Menurun",
-    "Sort by": "Diurutkan berdasarkan",
-    "Sort order": "Urutan"
-}
-=======
     "You are receiving this email because we received a password reset request for your account.": "Anda menerima surel ini karena kami menerima permintaan pengaturan ulang kata sandi untuk akun anda."
 }
->>>>>>> core/change-stack-to-inertia
