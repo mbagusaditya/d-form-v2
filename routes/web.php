@@ -37,7 +37,9 @@ Route::get('/docs', function () {
 // End of Routes for Landing page
 
 // Routes for Auth
-Route::get('/auth', AuthPageController::class)->middleware('guest')->name('auth.login');
+Route::get('/auth', function () {
+    return inertia('Auth');
+})->middleware('guest')->name('auth.login');
 
 Route::post('/auth/logout', LogoutController::class)->name('auth.logout');
 
