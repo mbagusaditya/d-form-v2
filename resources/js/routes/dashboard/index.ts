@@ -1,7 +1,8 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition } from './../../wayfinder'
 import events from './events'
 /**
-* @see routes/web/admin/event.php:8
+* @see \App\Http\Controllers\Dashboard\HomeController::__invoke
+* @see Http/Controllers/Dashboard/HomeController.php:9
 * @route '/dashboard'
 */
 export const home = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -15,7 +16,8 @@ home.definition = {
 } satisfies RouteDefinition<["get","head"]>
 
 /**
-* @see routes/web/admin/event.php:8
+* @see \App\Http\Controllers\Dashboard\HomeController::__invoke
+* @see Http/Controllers/Dashboard/HomeController.php:9
 * @route '/dashboard'
 */
 home.url = (options?: RouteQueryOptions) => {
@@ -23,7 +25,8 @@ home.url = (options?: RouteQueryOptions) => {
 }
 
 /**
-* @see routes/web/admin/event.php:8
+* @see \App\Http\Controllers\Dashboard\HomeController::__invoke
+* @see Http/Controllers/Dashboard/HomeController.php:9
 * @route '/dashboard'
 */
 home.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -32,7 +35,8 @@ home.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 })
 
 /**
-* @see routes/web/admin/event.php:8
+* @see \App\Http\Controllers\Dashboard\HomeController::__invoke
+* @see Http/Controllers/Dashboard/HomeController.php:9
 * @route '/dashboard'
 */
 home.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -41,8 +45,8 @@ home.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 })
 
 const dashboard = {
-    home: Object.assign(home, home),
     events: Object.assign(events, events),
+    home: Object.assign(home, home),
 }
 
 export default dashboard

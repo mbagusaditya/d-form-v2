@@ -2,8 +2,9 @@ import { queryParams, type RouteQueryOptions, type RouteDefinition } from './../
 import google723582 from './google'
 import githubF226c8 from './github'
 /**
-* @see routes/web/auth.php:12
-* @route '/auth'
+* @see \App\Http\Controllers\Auth\LoginController::login
+* @see Http/Controllers/Auth/LoginController.php:13
+* @route '/auth/login'
 */
 export const login = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: login.url(options),
@@ -12,20 +13,22 @@ export const login = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 login.definition = {
     methods: ["get","head"],
-    url: '/auth',
+    url: '/auth/login',
 } satisfies RouteDefinition<["get","head"]>
 
 /**
-* @see routes/web/auth.php:12
-* @route '/auth'
+* @see \App\Http\Controllers\Auth\LoginController::login
+* @see Http/Controllers/Auth/LoginController.php:13
+* @route '/auth/login'
 */
 login.url = (options?: RouteQueryOptions) => {
     return login.definition.url + queryParams(options)
 }
 
 /**
-* @see routes/web/auth.php:12
-* @route '/auth'
+* @see \App\Http\Controllers\Auth\LoginController::login
+* @see Http/Controllers/Auth/LoginController.php:13
+* @route '/auth/login'
 */
 login.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: login.url(options),
@@ -33,12 +36,125 @@ login.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 })
 
 /**
-* @see routes/web/auth.php:12
-* @route '/auth'
+* @see \App\Http\Controllers\Auth\LoginController::login
+* @see Http/Controllers/Auth/LoginController.php:13
+* @route '/auth/login'
 */
 login.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: login.url(options),
     method: 'head',
+})
+
+/**
+* @see \App\Http\Controllers\Auth\LoginController::login
+* @see Http/Controllers/Auth/LoginController.php:19
+* @route '/auth/login'
+*/
+export const login = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+    url: login.url(options),
+    method: 'post',
+})
+
+login.definition = {
+    methods: ["post"],
+    url: '/auth/login',
+} satisfies RouteDefinition<["post"]>
+
+/**
+* @see \App\Http\Controllers\Auth\LoginController::login
+* @see Http/Controllers/Auth/LoginController.php:19
+* @route '/auth/login'
+*/
+login.url = (options?: RouteQueryOptions) => {
+    return login.definition.url + queryParams(options)
+}
+
+/**
+* @see \App\Http\Controllers\Auth\LoginController::login
+* @see Http/Controllers/Auth/LoginController.php:19
+* @route '/auth/login'
+*/
+login.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+    url: login.url(options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\Auth\RegisterController::register
+* @see Http/Controllers/Auth/RegisterController.php:15
+* @route '/auth/register'
+*/
+export const register = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+    url: register.url(options),
+    method: 'get',
+})
+
+register.definition = {
+    methods: ["get","head"],
+    url: '/auth/register',
+} satisfies RouteDefinition<["get","head"]>
+
+/**
+* @see \App\Http\Controllers\Auth\RegisterController::register
+* @see Http/Controllers/Auth/RegisterController.php:15
+* @route '/auth/register'
+*/
+register.url = (options?: RouteQueryOptions) => {
+    return register.definition.url + queryParams(options)
+}
+
+/**
+* @see \App\Http\Controllers\Auth\RegisterController::register
+* @see Http/Controllers/Auth/RegisterController.php:15
+* @route '/auth/register'
+*/
+register.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+    url: register.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\Auth\RegisterController::register
+* @see Http/Controllers/Auth/RegisterController.php:15
+* @route '/auth/register'
+*/
+register.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+    url: register.url(options),
+    method: 'head',
+})
+
+/**
+* @see \App\Http\Controllers\Auth\RegisterController::register
+* @see Http/Controllers/Auth/RegisterController.php:21
+* @route '/auth/register'
+*/
+export const register = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+    url: register.url(options),
+    method: 'post',
+})
+
+register.definition = {
+    methods: ["post"],
+    url: '/auth/register',
+} satisfies RouteDefinition<["post"]>
+
+/**
+* @see \App\Http\Controllers\Auth\RegisterController::register
+* @see Http/Controllers/Auth/RegisterController.php:21
+* @route '/auth/register'
+*/
+register.url = (options?: RouteQueryOptions) => {
+    return register.definition.url + queryParams(options)
+}
+
+/**
+* @see \App\Http\Controllers\Auth\RegisterController::register
+* @see Http/Controllers/Auth/RegisterController.php:21
+* @route '/auth/register'
+*/
+register.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+    url: register.url(options),
+    method: 'post',
 })
 
 /**
@@ -165,6 +281,7 @@ logout.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
 const auth = {
     login: Object.assign(login, login),
+    register: Object.assign(register, register),
     google: Object.assign(google, google723582),
     github: Object.assign(github, githubF226c8),
     logout: Object.assign(logout, logout),

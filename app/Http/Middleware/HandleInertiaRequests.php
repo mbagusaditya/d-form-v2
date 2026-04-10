@@ -37,7 +37,7 @@ class HandleInertiaRequests extends Middleware
     {
         return [
             ...parent::share($request),
-            //
+            'auth.user' => auth()->guard('web')->user()
         ];
     }
 }
