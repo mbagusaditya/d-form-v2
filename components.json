@@ -1,13 +1,11 @@
 {
     "$schema": "https://shadcn-vue.com/schema.json",
-    "style": "mira",
-    "base": "reka",
-    "font": "inter",
+    "style": "new-york",
     "typescript": true,
     "tailwind": {
         "config": "",
         "css": "resources/css/app.css",
-        "baseColor": "neutral",
+        "baseColor": "slate",
         "cssVariables": true,
         "prefix": ""
     },

@@ -32,6 +32,8 @@ project dari Dinus Open Source Community dimana project ini merupakan sebuah web
 
 ## Disclaimer: baca ini sebelum ngoding
 
+- [Product Requirements (PRD)](docs/prd.md) — lingkup fitur, stack (Vue + Inertia), dan kriteria sukses
+- [Milestone & fase pengiriman](docs/milestone.md) — tahapan kerja tim dan migrasi Livewire → Vue
 - [Pedoman Front-end](docs/rules/front-end.md)
 - [Pedoman Back-end](docs/rules/back-end.md)
 
@@ -39,3 +41,5 @@ project dari Dinus Open Source Community dimana project ini merupakan sebuah web
 
 - [01. Instalasi projek](docs/01-installation.md)
 - [02. Struktur folder projek](docs/02-directory-structure.md)
+- [PRD — D-Form v2](docs/prd.md)
+- [Milestone — D-Form v2](docs/milestone.md)
