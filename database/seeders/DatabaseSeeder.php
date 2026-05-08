@@ -28,26 +28,23 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        $admin = User::create([
-            'name' => 'admin',
-            'email' => 'admin@gmail.com',
-            'password' => 'admin password'
-        ]);
-
-        $superAdmin = User::create([
-            'name' => 'super admin',
-            'email' => 'superadmin@gmail.com',
-            'password' => 'superadmin password'
-        ]);
-
         $this->call([
             RoleSeeder::class,
             EventSeeder::class,
             FormSeeder::class,
         ]);
 
-        $admin->assignRole('admin');
-        $superAdmin->assignRole('super-admin');
+        $admin = User::query()->firstOrCreate(
+            ['email' => 'admin@gmail.com'],
+            ['name' => 'admin', 'password' => 'admin password'],
+        );
+        $admin->syncRoles(['admin']);
+
+        $superAdmin = User::query()->firstOrCreate(
+            ['email' => 'superadmin@gmail.com'],
+            ['name' => 'super admin', 'password' => 'superadmin password'],
+        );
+        $superAdmin->syncRoles(['super-admin']);
 
         $memberData = [
             ['name' => 'Ahmad Fauzi', 'email' => 'ahmad@student.dinus.ac.id'],
@@ -58,8 +55,11 @@ class DatabaseSeeder extends Seeder
         ];
 
         foreach ($memberData as $data) {
-            $member = User::create([...$data, 'password' => 'password']);
-            $member->assignRole('member');
+            $member = User::query()->firstOrCreate(
+                ['email' => $data['email']],
+                ['name' => $data['name'], 'password' => 'password'],
+            );
+            $member->syncRoles(['member']);
         }
     }
 }

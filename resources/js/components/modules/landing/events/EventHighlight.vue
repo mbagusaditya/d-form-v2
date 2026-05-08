@@ -1,105 +1,68 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { ArrowRight, Calendar, MapPin, Users, Star } from 'lucide-vue-next'
-import { formatDate, categoryLabelMap } from '@/lib/dummyData'
-import { toCategoryList } from '@/lib/eventCategories'
-
-interface Highlight {
-    readonly id: string
-    readonly title: string
-    readonly description: string
-    readonly date: string
-    readonly location: string
-    readonly attendees: number
-    readonly status: string
-    readonly image: string
-    readonly categoryLabel: string
-}
+import { ref, onMounted } from 'vue'
+import { Card, CardContent } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 
 const props = defineProps<{
     events: IEvent[]
 }>()
 
-const featured = computed<IEvent | null>(() => props.events[0] ?? null)
-
-const highlight = computed<Highlight | null>(() => {
-    const e = featured.value
-    if (!e) return null
-    const description = e.description?.replace(/<[^>]+>/g, '') ?? ''
-    const trimmed = description.length > 220 ? `${description.slice(0, 220)}…` : description
-    const cats = toCategoryList(e.category)
-    const primary = cats[0] ?? ''
-    return {
-        id: e.id,
-        title: e.title,
-        description: trimmed,
-        date: `${formatDate(e.start_date)} — ${formatDate(e.end_date)}`,
-        location: e.location,
-        attendees: e.registered_count,
-        status: e.registration_status === 'open' ? 'Open' : 'Featured',
-        image: e.banner_url ?? '',
-        categoryLabel: primary ? categoryLabelMap[primary] ?? primary : 'Event',
-    }
+const visible = ref(false)
+onMounted(() => {
+    const obs = new IntersectionObserver(
+        ([e]) => { if (e?.isIntersecting) { visible.value = true; obs.disconnect() } },
+        { threshold: 0.1 },
+    )
+    const el = document.getElementById('event-highlight')
+    if (el) obs.observe(el)
 })
+
+const featured = props.events.slice(0, 3)
+
+const statusLabel = (s: string) => {
+    if (s === 'open') return 'Dibuka'
+    if (s === 'full') return 'Penuh'
+    if (s === 'closed') return 'Ditutup'
+    return 'Segera'
+}
+
+const statusColor = (s: string) =>
+    s === 'open' ? 'bg-green-500/10 text-green-600 border-green-500/20' : 'bg-muted text-muted-foreground border-border'
 </script>
 
 <template>
-    <section v-if="highlight" class="border-y border-border bg-muted/30 py-14">
-        <div class="mx-auto max-w-7xl px-6 lg:px-8">
-            <div class="mb-8 flex items-center gap-3">
-                <div class="grid size-9 place-items-center rounded-lg border border-primary/20 bg-primary/10 text-primary">
-                    <Star class="size-4" :stroke-width="2.4" />
-                </div>
-                <h2 class="font-display text-2xl font-bold tracking-[-0.025em] text-foreground">Highlighted Event</h2>
+    <section id="event-highlight" class="border-t border-border/30 py-16 md:py-24">
+        <div class="mx-auto max-w-5xl px-5 lg:px-8">
+            <div :class="['mb-10 transition-all duration-500', visible ? 'opacity-100' : 'opacity-0']">
+                <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">Sorotan</p>
+                <h2 class="mt-2 text-[1.5rem] font-semibold tracking-tight text-foreground sm:text-[1.75rem]">Acara terbaru</h2>
             </div>
 
-            <div class="app-surface overflow-hidden p-0">
-                <div class="grid lg:grid-cols-5">
-                    <div class="relative bg-muted lg:col-span-2">
-                        <img
-                            v-if="highlight.image"
-                            :src="highlight.image"
-                            :alt="highlight.title"
-                            class="h-full min-h-[280px] w-full object-cover"
-                        />
-                        <span class="absolute left-4 top-4 inline-flex items-center gap-1 rounded-full border border-border bg-card/95 px-2.5 py-1 text-[11px] font-semibold text-foreground backdrop-blur">
-                            {{ highlight.categoryLabel }}
-                        </span>
+            <div v-if="featured.length" class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                <Card
+                    v-for="(ev, i) in featured"
+                    :key="ev.id"
+                    :class="['group overflow-hidden border-border/50 transition-all duration-500 hover:border-primary/25', visible ? 'translate-y-0 opacity-100' : 'translate-y-6 opacity-0']"
+                    :style="{ transitionDelay: `${100 + i * 80}ms` }"
+                >
+                    <div v-if="ev.banner_url" class="h-36 w-full overflow-hidden bg-muted">
+                        <img :src="ev.banner_url" :alt="ev.title" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
                     </div>
-                    <div class="flex flex-col justify-center p-8 lg:col-span-3 lg:p-10">
-                        <div class="mb-3 inline-flex w-fit items-center gap-1.5 rounded-full border border-success/25 bg-success/10 px-2.5 py-1 text-[11px] font-semibold text-success">
-                            <span class="relative flex size-1.5">
-                                <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-60"></span>
-                                <span class="relative inline-flex size-1.5 rounded-full bg-success"></span>
-                            </span>
-                            <span>{{ highlight.status }}</span>
+                    <CardContent class="p-5">
+                        <div class="mb-2 flex items-center gap-2">
+                            <Badge variant="outline" :class="['text-[10px]', statusColor(ev.registration_status)]">
+                                {{ statusLabel(ev.registration_status) }}
+                            </Badge>
                         </div>
-                        <h3 class="font-display text-2xl font-bold tracking-[-0.025em] text-foreground sm:text-3xl">{{ highlight.title }}</h3>
-                        <p class="mt-3 max-w-xl text-sm leading-relaxed text-muted-foreground">{{ highlight.description }}</p>
-                        <div class="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs font-medium text-muted-foreground">
-                            <span class="inline-flex items-center gap-1.5">
-                                <Calendar class="size-3.5" :stroke-width="2" />
-                                {{ highlight.date }}
-                            </span>
-                            <span class="inline-flex items-center gap-1.5">
-                                <MapPin class="size-3.5" :stroke-width="2" />
-                                {{ highlight.location }}
-                            </span>
-                            <span class="inline-flex items-center gap-1.5">
-                                <Users class="size-3.5" :stroke-width="2" />
-                                {{ highlight.attendees.toLocaleString() }} registered
-                            </span>
+                        <h3 class="text-[14px] font-semibold text-foreground line-clamp-2">{{ ev.title }}</h3>
+                        <p class="mt-1 text-[12px] text-muted-foreground">{{ ev.location }}</p>
+                        <div class="mt-3 flex items-center justify-between text-[11px] text-muted-foreground">
+                            <span>{{ ev.registered_count }}/{{ ev.quota }} pendaftar</span>
                         </div>
-                        <a
-                            :href="`/events/${highlight.id}`"
-                            class="mt-7 inline-flex w-fit items-center gap-2 rounded-xl border border-primary/15 bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-[transform,background-color] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-px hover:bg-primary/92 active:scale-[0.98]"
-                        >
-                            View event
-                            <ArrowRight class="size-3.5" :stroke-width="2.4" />
-                        </a>
-                    </div>
-                </div>
+                    </CardContent>
+                </Card>
             </div>
+            <p v-else class="text-[14px] text-muted-foreground">Belum ada acara yang tersedia.</p>
         </div>
     </section>
 </template>

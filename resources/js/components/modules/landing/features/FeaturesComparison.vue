@@ -1,76 +1,53 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { Check, Minus } from 'lucide-vue-next'
-import type { ComparisonRow } from '@/types/landing'
+import { Card, CardContent } from '@/components/ui/card'
+
+const rows = [
+    { feature: 'Form Builder Visual', dform: true, manual: false },
+    { feature: 'Dasbor Real-time', dform: true, manual: false },
+    { feature: 'Multi-Acara', dform: true, manual: false },
+    { feature: 'Ekspor Data', dform: true, manual: true },
+    { feature: 'Responsif Otomatis', dform: true, manual: false },
+    { feature: 'Keamanan Berlapis', dform: true, manual: false },
+]
 
 const visible = ref(false)
 onMounted(() => {
-    const observer = new IntersectionObserver(
-        ([entry]) => {
-            if (entry.isIntersecting) visible.value = true
-        },
+    const obs = new IntersectionObserver(
+        ([e]) => { if (e?.isIntersecting) { visible.value = true; obs.disconnect() } },
         { threshold: 0.1 },
     )
-    const el = document.getElementById('feat-compare')
-    if (el) observer.observe(el)
+    const el = document.getElementById('features-compare')
+    if (el) obs.observe(el)
 })
-
-const rows: readonly ComparisonRow[] = [
-    { feature: 'Unlimited Events', dform: true, competitor: false },
-    { feature: 'Drag & Drop Form Builder', dform: true, competitor: true },
-    { feature: 'Real-time Analytics', dform: true, competitor: false },
-    { feature: 'Team Collaboration', dform: true, competitor: false },
-    { feature: 'Webhooks & API', dform: true, competitor: true },
-    { feature: 'Custom Branding', dform: true, competitor: false },
-    { feature: 'GDPR Compliance', dform: true, competitor: true },
-    { feature: 'Free Tier Available', dform: true, competitor: false },
-]
-
-function isYes(value: boolean | string): boolean {
-    return value === true
-}
 </script>
 
 <template>
-    <section id="feat-compare" class="bg-background py-24 lg:py-32">
-        <div class="mx-auto max-w-4xl px-6 lg:px-8">
-            <div :class="['mx-auto max-w-2xl text-center transition-[opacity,transform] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]', visible ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0']">
-                <h2 class="font-display text-3xl font-bold tracking-[-0.035em] text-foreground sm:text-4xl lg:text-5xl">
-                    Why choose <span class="text-primary">DForm?</span>
-                </h2>
-                <p class="mt-3 text-base leading-relaxed text-muted-foreground">See how we compare to other platforms.</p>
+    <section id="features-compare" class="py-20 md:py-28">
+        <div class="mx-auto max-w-5xl px-5 lg:px-8">
+            <div :class="['mb-10 max-w-md transition-all duration-500', visible ? 'opacity-100' : 'opacity-0']">
+                <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">Perbandingan</p>
+                <h2 class="mt-2 text-[1.5rem] font-semibold tracking-tight text-foreground sm:text-[1.75rem]">DForm vs cara manual</h2>
             </div>
 
-            <div
-                :class="[
-                    'app-surface mt-12 overflow-hidden p-0 transition-[opacity,transform] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]',
-                    visible ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0',
-                ]"
-                style="transition-delay: 200ms"
-            >
-                <div class="grid grid-cols-3 border-b border-border bg-muted/40 px-6 py-3.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-                    <span>Feature</span>
-                    <span class="text-center text-primary">DForm</span>
-                    <span class="text-center">Others</span>
-                </div>
-                <div class="divide-y divide-border">
-                    <div
-                        v-for="row in rows"
-                        :key="row.feature"
-                        class="grid grid-cols-3 items-center px-6 py-3.5 transition-colors hover:bg-primary/4"
-                    >
-                        <span class="text-sm font-medium text-foreground">{{ row.feature }}</span>
-                        <span class="flex justify-center">
-                            <Check v-if="isYes(row.dform)" class="size-4 text-success" :stroke-width="3" />
-                            <Minus v-else class="size-4 text-muted-foreground/40" :stroke-width="2" />
-                        </span>
-                        <span class="flex justify-center">
-                            <Check v-if="isYes(row.competitor)" class="size-4 text-success" :stroke-width="3" />
-                            <Minus v-else class="size-4 text-muted-foreground/40" :stroke-width="2" />
-                        </span>
+            <Card :class="['overflow-hidden border-border/40 transition-all duration-500', visible ? 'opacity-100' : 'opacity-0']">
+                <CardContent class="p-0">
+                    <div class="grid grid-cols-3 border-b border-border/40 bg-muted/20 px-5 py-3 text-[12px] font-semibold text-muted-foreground">
+                        <span>Fitur</span>
+                        <span class="text-center text-primary">DForm</span>
+                        <span class="text-center">Manual</span>
                     </div>
-                </div>
-            </div>
+                    <div
+                        v-for="(row, i) in rows"
+                        :key="row.feature"
+                        :class="['grid grid-cols-3 px-5 py-3 text-[13px]', i < rows.length - 1 ? 'border-b border-border/30' : '']"
+                    >
+                        <span class="text-foreground/90">{{ row.feature }}</span>
+                        <span class="text-center text-primary">{{ row.dform ? '✓' : '—' }}</span>
+                        <span class="text-center text-muted-foreground">{{ row.manual ? '✓' : '—' }}</span>
+                    </div>
+                </CardContent>
+            </Card>
         </div>
     </section>
 </template>

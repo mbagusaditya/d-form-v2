@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\EventStatus;
 use App\Models\Event;
 use App\Services\Event\EventService;
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use App\Services\Event\UserPortalEventResolver;
 
 class EventsController extends Controller
 {
@@ -25,17 +25,9 @@ class EventsController extends Controller
         ]);
     }
 
-    public function show(string $id, EventService $eventService)
+    public function show(string $segment, EventService $eventService, UserPortalEventResolver $resolver)
     {
-        $event = Event::query()
-            ->where('status', EventStatus::Published)
-            ->whereNull('deleted_at')
-            ->whereKey($id)
-            ->first();
-
-        if ($event === null) {
-            throw new NotFoundHttpException;
-        }
+        $event = $resolver->resolvePublished($segment);
 
         return inertia('EventDetail', [
             'event' => $eventService->eventToInertiaArray($event),

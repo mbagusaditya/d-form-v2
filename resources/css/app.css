@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@10..48,500..800&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap');
 @import 'tailwindcss';
 @import 'tw-animate-css';
 
@@ -14,9 +14,9 @@
 
 @theme {
     --font-sans:
-        'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-        'Segoe UI Symbol', 'Noto Color Emoji';
-    --font-display: 'Bricolage Grotesque', 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
+        'Poppins', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
+        'Noto Color Emoji';
+    --font-display: 'Poppins', ui-sans-serif, system-ui, sans-serif;
 
     --animate-rise: rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
     --animate-fade-in: fade-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
@@ -226,13 +226,14 @@
     }
 
     body {
-        background:
-            radial-gradient(circle at 14% 8%, color-mix(in srgb, var(--primary) 11%, transparent), transparent 36rem),
-            radial-gradient(circle at 88% 16%, color-mix(in srgb, var(--accent) 60%, transparent), transparent 30rem),
-            linear-gradient(180deg, var(--background), color-mix(in srgb, var(--app-surface-soft) 70%, var(--background)));
+        background: linear-gradient(
+            180deg,
+            var(--background) 0%,
+            color-mix(in srgb, var(--muted) 35%, var(--background)) 100%
+        );
         color: var(--foreground);
         font-family: var(--font-sans);
-        font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+        font-feature-settings: 'kern' 1;
         text-rendering: optimizeLegibility;
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
@@ -243,22 +244,23 @@
         color: var(--foreground);
     }
 
-    /* Display headings */
+    /* Display headings — single family (Poppins) */
     h1,
     h2,
     h3,
     .font-display {
         font-family: var(--font-display);
-        letter-spacing: -0.035em;
-        font-weight: 700;
+        letter-spacing: -0.02em;
+        font-weight: 600;
     }
 
     h1 {
-        line-height: 1.04;
+        line-height: 1.08;
+        font-weight: 600;
     }
 
     h2 {
-        line-height: 1.1;
+        line-height: 1.12;
     }
 
     /* Disable forced uppercase oddities */
@@ -274,11 +276,11 @@
 
 @layer utilities {
     .app-page {
-        @apply mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8;
+        @apply mx-auto w-full max-w-7xl px-4 py-8 sm:px-8;
     }
 
     .app-stack {
-        @apply flex flex-col gap-6;
+        @apply flex flex-col gap-8;
     }
 
     .app-surface {
@@ -510,9 +512,9 @@
 
     [data-slot='table-head'],
     [data-slot='card-title'] {
-        font-family: var(--font-display);
-        font-weight: 700;
-        letter-spacing: -0.018em;
+        font-family: var(--font-sans);
+        font-weight: 600;
+        letter-spacing: -0.015em;
     }
 
     /* Dropdown / select items */

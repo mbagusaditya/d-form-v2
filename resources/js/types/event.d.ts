@@ -89,6 +89,10 @@ declare global {
         user: { id: string; name: string; email: string } | null
         answers: Record<string, unknown>
         submitted_at: string
+        review_status?: 'pending' | 'accepted' | 'rejected' | null
+        reviewed_at?: string | null
+        reviewed_by?: string | null
+        reviewer?: { id: string; name: string; email: string } | null
     }
 
     interface IKpiCard {

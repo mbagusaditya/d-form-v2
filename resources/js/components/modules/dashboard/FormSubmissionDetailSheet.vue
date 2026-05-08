@@ -9,7 +9,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Clock, FileText, CheckCircle2, XCircle } from 'lucide-vue-next'
-import { submissionUserInitials } from '@/lib/formSubmissionsUi'
+import { formSubmissionReviewIsPending, submissionUserInitials } from '@/lib/formSubmissionsUi'
 
 defineProps<{
     submission: IFormSubmission | null
@@ -18,6 +18,7 @@ defineProps<{
     humanizeKey: (v: string) => string
     answerPreview: (v: unknown) => string
     fileUrl: (v: unknown) => string | null
+    isSubmissionReviewing: (submissionId: string) => boolean
 }>()
 
 const open = defineModel<boolean>('open', { required: true })
@@ -98,30 +99,48 @@ defineEmits<{
                 </section>
 
                 <section v-if="submission" class="space-y-3 border-t border-border pt-6">
-                    <h5 class="text-[10px] font-semibold uppercase tracking-[0.14em] text-primary">Review (preview)</h5>
-                    <p class="text-xs leading-relaxed text-muted-foreground">
-                        These actions only trigger a notification until the backend adds status columns and approve/reject routes.
+                    <h5 class="text-[10px] font-semibold uppercase tracking-[0.14em] text-primary">Review</h5>
+                    <template v-if="formSubmissionReviewIsPending(submission)">
+                        <p class="text-xs leading-relaxed text-muted-foreground">
+                            Terima atau tolak submission ini. Perubahan disimpan di server dan daftar akan diperbarui.
+                        </p>
+                        <div class="flex flex-wrap gap-2">
+                            <Button
+                                type="button"
+                                class="min-w-[120px] flex-1 gap-2 border-success/30 text-success hover:bg-success/10"
+                                variant="outline"
+                                :disabled="isSubmissionReviewing(submission.id)"
+                                @click="$emit('review', { action: 'accept', submission })"
+                            >
+                                <CheckCircle2 class="size-4" />
+                                Accept
+                            </Button>
+                            <Button
+                                type="button"
+                                class="min-w-[120px] flex-1 gap-2 border-destructive/30 text-destructive hover:bg-destructive/10"
+                                variant="outline"
+                                :disabled="isSubmissionReviewing(submission.id)"
+                                @click="$emit('review', { action: 'reject', submission })"
+                            >
+                                <XCircle class="size-4" />
+                                Reject
+                            </Button>
+                        </div>
+                    </template>
+                    <p v-else class="text-sm leading-relaxed text-muted-foreground">
+                        <template v-if="submission.review_status === 'accepted'">
+                            Status:
+                            <span class="font-semibold text-success">Diterima</span>
+                            <span v-if="submission.reviewed_at"> · {{ formatDate(submission.reviewed_at) }}</span>
+                            <span v-if="submission.reviewer"> · {{ submission.reviewer.name }}</span>
+                        </template>
+                        <template v-else-if="submission.review_status === 'rejected'">
+                            Status:
+                            <span class="font-semibold text-destructive">Ditolak</span>
+                            <span v-if="submission.reviewed_at"> · {{ formatDate(submission.reviewed_at) }}</span>
+                            <span v-if="submission.reviewer"> · {{ submission.reviewer.name }}</span>
+                        </template>
                     </p>
-                    <div class="flex flex-wrap gap-2">
-                        <Button
-                            type="button"
-                            class="min-w-[120px] flex-1 gap-2 border-success/30 text-success hover:bg-success/10"
-                            variant="outline"
-                            @click="$emit('review', { action: 'accept', submission })"
-                        >
-                            <CheckCircle2 class="size-4" />
-                            Accept
-                        </Button>
-                        <Button
-                            type="button"
-                            class="min-w-[120px] flex-1 gap-2 border-destructive/30 text-destructive hover:bg-destructive/10"
-                            variant="outline"
-                            @click="$emit('review', { action: 'reject', submission })"
-                        >
-                            <XCircle class="size-4" />
-                            Reject
-                        </Button>
-                    </div>
                 </section>
             </div>
         </SheetContent>

@@ -83,7 +83,7 @@ const highlights: string[] = [
                             </h1>
                         </div>
                         <a
-                            href="/auth"
+                            href="/auth/register"
                             class="inline-flex items-center gap-2 rounded-xl border border-primary/15 bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-sm transition-[transform,background-color] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-px hover:bg-primary/92 active:scale-[0.98]"
                         >
                             Register Now
@@ -180,7 +180,7 @@ const highlights: string[] = [
                                     />
                                 </div>
                                 <a
-                                    href="/auth"
+                                    href="/auth/register"
                                     class="mt-6 flex w-full items-center justify-center gap-2 rounded-xl border border-primary/15 bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-sm transition-[transform,background-color] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-px hover:bg-primary/92 active:scale-[0.98]"
                                 >
                                     Register Now

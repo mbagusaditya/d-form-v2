@@ -1,55 +1,39 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { ref, onMounted } from 'vue'
+import { Badge } from '@/components/ui/badge'
 import LocalLottie from '@/components/core/LocalLottie.vue'
 
-const visible = ref(false)
-
-onMounted(() => {
-    setTimeout(() => (visible.value = true), 100)
-})
+const show = ref(false)
+onMounted(() => requestAnimationFrame(() => (show.value = true)))
 </script>
 
 <template>
-    <section class="relative overflow-hidden bg-background pt-32 pb-24 lg:pt-40 lg:pb-28">
-        <div class="app-grid pointer-events-none absolute inset-0 opacity-40"></div>
-        <div class="pointer-events-none absolute left-1/2 top-20 h-80 w-80 -translate-x-1/2 rounded-full bg-primary/10 blur-3xl"></div>
-
-        <div class="relative mx-auto grid max-w-7xl items-center gap-12 px-6 lg:grid-cols-[0.95fr_1.05fr] lg:px-8">
-            <div
-                :class="[
-                    'transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]',
-                    visible ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0',
-                ]"
-            >
-                <div class="app-kicker mb-6">Community events</div>
-                <h1 class="font-display text-balance text-[2.6rem] font-bold leading-[1] tracking-[-0.04em] text-foreground sm:text-5xl lg:text-6xl">
-                    Discover what's
-                    <span class="text-primary">happening next.</span>
-                </h1>
-                <p class="mt-6 max-w-2xl text-base leading-relaxed text-muted-foreground lg:text-lg">
-                    Browse curated events from the community, register instantly, and never miss a chance to learn,
-                    build, or connect.
-                </p>
-            </div>
-
-            <div
-                :class="[
-                    'transition-all delay-200 duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]',
-                    visible ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0',
-                ]"
-            >
-                <div class="app-surface overflow-hidden p-6">
-                    <div class="mb-5 flex items-center justify-between gap-3">
-                        <div class="min-w-0">
-                            <p class="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Event discovery</p>
-                            <p class="font-display mt-1 text-2xl font-bold tracking-[-0.02em]">Open registrations</p>
-                        </div>
-                        <span class="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/10 px-2.5 py-1 text-[11px] font-semibold text-primary">
-                            <span class="size-1.5 rounded-full bg-primary"></span>
-                            Updated live
-                        </span>
+    <section class="relative overflow-hidden pt-28 pb-16 md:pt-36 md:pb-24">
+        <div
+            class="pointer-events-none absolute -top-32 left-1/3 size-[500px] rounded-full bg-primary/[0.04] blur-[120px]"
+            aria-hidden="true"
+        />
+        <div class="relative mx-auto max-w-5xl px-5 lg:px-8">
+            <div class="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
+                <div
+                    :class="['transition-all duration-700', show ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0']"
+                >
+                    <Badge variant="outline" class="mb-5 border-primary/20 bg-primary/[0.05] text-[11px] font-medium text-primary">
+                        Acara
+                    </Badge>
+                    <h1 class="text-[1.85rem] font-semibold leading-[1.18] tracking-tight text-foreground sm:text-[2.5rem]">
+                        Temukan acara <span class="text-primary">yang tersedia.</span>
+                    </h1>
+                    <p class="mt-5 max-w-[420px] text-[14px] leading-[1.7] text-muted-foreground">
+                        Jelajahi daftar acara yang sedang membuka pendaftaran dan bergabunglah dengan mudah.
+                    </p>
+                </div>
+                <div
+                    :class="['transition-all delay-100 duration-700', show ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0']"
+                >
+                    <div class="rounded-2xl border border-border/40 bg-card/60 p-5 backdrop-blur-sm sm:p-7">
+                        <LocalLottie name="eventsLive" :height="260" width="100%" :lazy="false" />
                     </div>
-                    <LocalLottie name="eventsLive" :height="280" width="100%" :lazy="false" />
                 </div>
             </div>
         </div>

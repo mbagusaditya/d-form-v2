@@ -30,3 +30,10 @@ export function submissionFileUrl(value: unknown): string | null {
 export function submissionPaginationLabel(value: string): string {
     return value.replace('&laquo;', 'Previous').replace('&raquo;', 'Next')
 }
+
+/** Matches {@see App\Enums\FormAnswerReviewStatus} — pending answers can be reviewed. */
+export function formSubmissionReviewIsPending(submission: {
+    review_status?: 'pending' | 'accepted' | 'rejected' | null
+}): boolean {
+    return submission.review_status == null || submission.review_status === 'pending'
+}

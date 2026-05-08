@@ -136,24 +136,25 @@ class RoleSeeder extends Seeder
             ]
         ];
 
-        // Reset cached roles and permissions
         app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
-        // create permissions
         foreach ($permissions as $permission) {
-            Permission::create(['name' => $permission]);
+            Permission::firstOrCreate(
+                ['name' => $permission, 'guard_name' => 'web'],
+            );
         }
 
-        // update cache to know about the newly created permissions (required if using WithoutModelEvents in seeders)
         app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
-        Role::create(['name' => 'admin'])
-            ->givePermissionTo($roles['admin']);
+        $adminPermissionNames = array_values($roles['admin']);
 
-        Role::create(['name' => 'member'])
-            ->givePermissionTo($roles['member']);
+        Role::findOrCreate('admin', 'web')
+            ->syncPermissions($adminPermissionNames);
 
-        Role::create(['name' => 'super-admin'])
-            ->givePermissionTo(Permission::all());
+        Role::findOrCreate('member', 'web')
+            ->syncPermissions($roles['member']);
+
+        Role::findOrCreate('super-admin', 'web')
+            ->syncPermissions(Permission::query()->where('guard_name', 'web')->pluck('name')->all());
     }
 }

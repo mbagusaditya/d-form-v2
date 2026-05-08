@@ -1,76 +1,62 @@
 <script setup lang="ts">
-const productLinks = [
-    { label: 'Features', href: '/features' },
-    { label: 'Events', href: '/events' },
-    { label: 'Documentation', href: '/docs' },
-]
+import { Separator } from '@/components/ui/separator'
 
-const resourceLinks = [
-    { label: 'API Reference', href: '/docs' },
-    { label: 'Guides', href: '/docs' },
-    { label: 'Community', href: '#' },
+const columns = [
+    {
+        title: 'Platform',
+        items: [
+            { label: 'Fitur', href: '/features' },
+            { label: 'Acara', href: '/events' },
+            { label: 'Dokumentasi', href: '/docs' },
+        ],
+    },
+    {
+        title: 'Akses',
+        items: [
+            { label: 'Masuk', href: '/auth/login' },
+            { label: 'Buat akun', href: '/auth/register' },
+            { label: 'Dasbor', href: '/dashboard' },
+        ],
+    },
 ]
 </script>
 
 <template>
-    <footer class="border-t border-slate-800 bg-slate-950 pt-14 pb-8">
-        <div class="mx-auto max-w-7xl px-6 lg:px-8">
-            <div class="grid gap-10 lg:grid-cols-[1.3fr_0.7fr_0.7fr_1.1fr]">
+    <footer class="border-t border-border/40 bg-muted/15">
+        <div class="mx-auto max-w-5xl px-5 lg:px-8">
+            <div class="grid gap-8 py-12 sm:grid-cols-3">
                 <div>
-                    <a href="/" class="inline-flex items-center gap-2.5">
-                        <div class="flex size-8 items-center justify-center rounded-lg border border-white/15 bg-primary text-xs font-semibold text-white shadow-sm">
-                            DF
-                        </div>
-                        <span class="font-display text-xl font-semibold text-white">
-                            D<span class="text-primary">Form</span>
-                        </span>
+                    <a href="/" class="inline-flex items-center gap-2">
+                        <span class="flex size-7 items-center justify-center rounded-md bg-primary text-[10px] font-bold text-primary-foreground">D</span>
+                        <span class="text-[15px] font-semibold tracking-tight text-foreground">DForm</span>
                     </a>
-                    <p class="mt-4 max-w-xs text-sm leading-relaxed text-white/55">
-                        A focused platform for event organizers to create forms, manage events, and collect responses.
+                    <p class="mt-3 max-w-[220px] text-[12px] leading-relaxed text-muted-foreground">
+                        Platform sederhana untuk mengelola pendaftaran acara dari satu tempat.
                     </p>
-                    <div class="mt-5 flex gap-2.5">
-                        <a href="#" class="rounded-full border border-white/10 px-3 py-1.5 text-xs font-medium text-white/60 transition-colors hover:border-white/25 hover:text-white">Twitter</a>
-                        <a href="#" class="rounded-full border border-white/10 px-3 py-1.5 text-xs font-medium text-white/60 transition-colors hover:border-white/25 hover:text-white">GitHub</a>
-                    </div>
                 </div>
 
-                <div>
-                    <h4 class="mb-3.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/35">Product</h4>
-                    <ul class="flex flex-col gap-2.5">
-                        <li v-for="link in productLinks" :key="link.label">
-                            <a :href="link.href" class="text-sm text-white/60 transition-colors hover:text-white">{{ link.label }}</a>
+                <div v-for="col in columns" :key="col.title">
+                    <p class="mb-3 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/70">
+                        {{ col.title }}
+                    </p>
+                    <ul class="flex flex-col gap-2">
+                        <li v-for="item in col.items" :key="item.label">
+                            <a
+                                :href="item.href"
+                                class="text-[13px] text-foreground/75 transition-colors duration-150 hover:text-primary"
+                            >
+                                {{ item.label }}
+                            </a>
                         </li>
                     </ul>
-                </div>
-
-                <div>
-                    <h4 class="mb-3.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/35">Resources</h4>
-                    <ul class="flex flex-col gap-2.5">
-                        <li v-for="link in resourceLinks" :key="link.label">
-                            <a :href="link.href" class="text-sm text-white/60 transition-colors hover:text-white">{{ link.label }}</a>
-                        </li>
-                    </ul>
-                </div>
-
-                <div>
-                    <h4 class="mb-3.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/35">Location</h4>
-                    <p class="text-sm leading-relaxed text-white/55">
-                        Gedung D, Universitas Dian Nuswantoro,<br />
-                        Jl. Imam Bonjol No.207, Semarang,<br />
-                        Jawa Tengah 50131
-                    </p>
                 </div>
             </div>
 
-            <div class="mt-12 border-t border-white/10 pt-6">
-                <div class="flex flex-col items-center justify-between gap-3 sm:flex-row">
-                    <p class="text-xs text-white/40">
-                        &copy; {{ new Date().getFullYear() }} DForm. All rights reserved.
-                    </p>
-                    <p class="text-xs text-white/40">
-                        Built by Doscom
-                    </p>
-                </div>
+            <Separator class="opacity-50" />
+
+            <div class="flex flex-col items-start justify-between gap-2 py-5 sm:flex-row sm:items-center">
+                <p class="text-[11px] text-muted-foreground">&copy; {{ new Date().getFullYear() }} DForm</p>
+                <p class="text-[11px] text-muted-foreground">Doscom — Universitas Dian Nuswantoro</p>
             </div>
         </div>
     </footer>

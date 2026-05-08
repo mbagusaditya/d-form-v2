@@ -1,69 +1,49 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { Badge } from '@/components/ui/badge'
 import LocalLottie from '@/components/core/LocalLottie.vue'
 
-const visible = ref(false)
-onMounted(() => setTimeout(() => (visible.value = true), 100))
+const show = ref(false)
+onMounted(() => requestAnimationFrame(() => (show.value = true)))
 </script>
 
 <template>
-    <section class="relative overflow-hidden bg-background pt-32 pb-20 lg:pt-40 lg:pb-24">
-        <div class="app-grid pointer-events-none absolute inset-0 opacity-40"></div>
-        <div class="pointer-events-none absolute left-1/2 top-28 h-80 w-80 -translate-x-1/2 rounded-full bg-primary/10 blur-3xl"></div>
+    <section class="relative overflow-hidden pt-28 pb-16 md:pt-36 md:pb-24">
+        <div
+            class="pointer-events-none absolute -top-32 right-0 size-[500px] rounded-full bg-primary/[0.04] blur-[120px]"
+            aria-hidden="true"
+        />
 
-        <div class="relative mx-auto grid max-w-7xl items-center gap-12 px-6 lg:grid-cols-[0.95fr_1.05fr] lg:px-8">
-            <div
-                :class="[
-                    'w-full max-w-3xl transition-[opacity,transform] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]',
-                    visible ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0',
-                ]"
-            >
-                <div class="app-kicker mb-6">Feature suite</div>
-                <h1 class="font-display text-balance text-[2.6rem] font-bold leading-[1] tracking-[-0.04em] text-foreground sm:text-5xl lg:text-6xl">
-                    Every tool you need,
-                    <span class="relative inline-block text-primary">
-                        one platform.
-                        <span class="feat-underline absolute -bottom-1 left-0 h-2 w-full rounded-full bg-primary/15"></span>
-                    </span>
-                </h1>
-
-                <p class="mt-6 max-w-2xl text-base leading-relaxed text-muted-foreground lg:text-lg">
-                    From form building to real-time analytics, DForm gives event organizers everything they need to
-                    deliver clear workflows and better registration experiences.
-                </p>
-            </div>
-
-            <div
-                :class="[
-                    'w-full transition-[opacity,transform] delay-300 duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]',
-                    visible ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0',
-                ]"
-            >
-                <div class="app-surface overflow-hidden p-6">
-                    <div class="grid gap-4 sm:grid-cols-2">
-                        <div class="rounded-2xl border border-border bg-card p-5 shadow-xs">
-                            <p class="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Builder</p>
-                            <p class="font-display mt-2 text-xl font-bold tracking-[-0.02em]">Drag. Preview. Publish.</p>
-                        </div>
-                        <div class="rounded-2xl border border-primary/20 bg-primary/8 p-5 shadow-xs">
-                            <p class="text-[10px] font-semibold uppercase tracking-[0.18em] text-primary">Analytics</p>
-                            <p class="font-display mt-2 text-xl font-bold tracking-[-0.02em]">89% completion</p>
-                        </div>
+        <div class="relative mx-auto max-w-5xl px-5 lg:px-8">
+            <div class="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
+                <div
+                    :class="[
+                        'transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]',
+                        show ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0',
+                    ]"
+                >
+                    <Badge variant="outline" class="mb-5 border-primary/20 bg-primary/[0.05] text-[11px] font-medium text-primary">
+                        Fitur Platform
+                    </Badge>
+                    <h1 class="text-[1.85rem] font-semibold leading-[1.18] tracking-tight text-foreground sm:text-[2.5rem]">
+                        Semua yang Anda butuhkan,
+                        <span class="text-primary">tanpa yang berlebihan.</span>
+                    </h1>
+                    <p class="mt-5 max-w-[420px] text-[14px] leading-[1.7] text-muted-foreground">
+                        DForm dirancang untuk menjadi sederhana — setiap fitur punya tujuan jelas untuk memudahkan pendaftaran acara Anda.
+                    </p>
+                </div>
+                <div
+                    :class="[
+                        'transition-all delay-100 duration-700',
+                        show ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0',
+                    ]"
+                >
+                    <div class="rounded-2xl border border-border/40 bg-card/60 p-5 backdrop-blur-sm sm:p-7">
+                        <LocalLottie name="featureModules" :height="260" width="100%" :lazy="false" />
                     </div>
-                    <LocalLottie name="featureModules" :height="240" width="100%" :lazy="false" />
                 </div>
             </div>
         </div>
     </section>
 </template>
-
-<style scoped>
-.feat-underline {
-    animation: underlineGrow 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.7s both;
-    transform-origin: left;
-}
-@keyframes underlineGrow {
-    from { transform: scaleX(0); }
-    to { transform: scaleX(1); }
-}
-</style>

@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { FileText, Eye, CheckCircle2, XCircle } from 'lucide-vue-next'
-import { submissionUserInitials } from '@/lib/formSubmissionsUi'
+import { formSubmissionReviewIsPending, submissionUserInitials } from '@/lib/formSubmissionsUi'
 
 defineProps<{
     submissions: IFormSubmission[]
@@ -12,6 +12,7 @@ defineProps<{
     humanizeKey: (v: string) => string
     answerPreview: (v: unknown) => string
     fileUrl: (v: unknown) => string | null
+    isSubmissionReviewing: (submissionId: string) => boolean
 }>()
 
 defineEmits<{
@@ -93,8 +94,9 @@ defineEmits<{
                                     type="button"
                                     variant="ghost"
                                     size="icon-sm"
-                                    title="Accept (UI only)"
+                                    title="Terima submission"
                                     class="text-success hover:bg-success/10 hover:text-success"
+                                    :disabled="!formSubmissionReviewIsPending(submission) || isSubmissionReviewing(submission.id)"
                                     @click="$emit('review', { action: 'accept', submission })"
                                 >
                                     <CheckCircle2 class="size-4" />
@@ -103,8 +105,9 @@ defineEmits<{
                                     type="button"
                                     variant="ghost"
                                     size="icon-sm"
-                                    title="Reject (UI only)"
+                                    title="Tolak submission"
                                     class="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                                    :disabled="!formSubmissionReviewIsPending(submission) || isSubmissionReviewing(submission.id)"
                                     @click="$emit('review', { action: 'reject', submission })"
                                 >
                                     <XCircle class="size-4" />

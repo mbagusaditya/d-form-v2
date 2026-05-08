@@ -33,7 +33,7 @@ const props = defineProps<{
 const s = reactive(useFormSubmissionsPage(props))
 
 function onReview(payload: { action: 'accept' | 'reject'; submission: IFormSubmission }) {
-    s.submissionReviewStub(payload.action, payload.submission)
+    s.submitSubmissionReview(payload.action, payload.submission)
 }
 </script>
 
@@ -85,6 +85,7 @@ function onReview(payload: { action: 'accept' | 'reject'; submission: IFormSubmi
                     :humanize-key="s.humanizeKey"
                     :answer-preview="s.answerPreview"
                     :file-url="s.fileUrl"
+                    :is-submission-reviewing="s.isSubmissionReviewing"
                     @open-detail="s.openDetail"
                     @review="onReview"
                 />
@@ -97,6 +98,7 @@ function onReview(payload: { action: 'accept' | 'reject'; submission: IFormSubmi
                     :humanize-key="s.humanizeKey"
                     :answer-preview="s.answerPreview"
                     :file-url="s.fileUrl"
+                    :is-submission-reviewing="s.isSubmissionReviewing"
                     @open-detail="s.openDetail"
                     @review="onReview"
                 />
@@ -114,6 +116,7 @@ function onReview(payload: { action: 'accept' | 'reject'; submission: IFormSubmi
         :humanize-key="s.humanizeKey"
         :answer-preview="s.answerPreview"
         :file-url="s.fileUrl"
+        :is-submission-reviewing="s.isSubmissionReviewing"
         @review="onReview"
     />
 </template>

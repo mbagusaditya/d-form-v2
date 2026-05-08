@@ -1,4 +1,5 @@
 import { computed, ref } from 'vue'
+import { router } from '@inertiajs/vue3'
 import { toast } from 'vue-sonner'
 import {
     answerPreview,
@@ -6,6 +7,7 @@ import {
     humanizeSubmissionKey,
     submissionFileUrl,
 } from '@/lib/formSubmissionsUi'
+import FormAnswerReviewController from '@/actions/App/Http/Controllers/Dashboard/Events/Forms/FormAnswerReviewController'
 
 interface PaginationLink {
     url: string | null
@@ -22,6 +24,11 @@ interface SubmissionPaginator {
     links?: PaginationLink[]
 }
 
+function readXsrfToken(): string | null {
+    const m = document.cookie.match(/(?:^|; )XSRF-TOKEN=([^;]*)/)
+    return m?.[1] ? decodeURIComponent(m[1]) : null
+}
+
 export function useFormSubmissionsPage(props: {
     event: { id: string; title: string }
     form: { id: string; title: string }
@@ -31,6 +38,7 @@ export function useFormSubmissionsPage(props: {
     const viewType = ref<'table' | 'form'>('table')
     const selectedSubmission = ref<IFormSubmission | null>(null)
     const isDetailOpen = ref(false)
+    const reviewingIds = ref<Set<string>>(new Set())
 
     const fieldLabelMap = computed(() => {
         const map: Record<string, string> = {}
@@ -78,12 +86,80 @@ export function useFormSubmissionsPage(props: {
         isDetailOpen.value = true
     }
 
-    function submissionReviewStub(action: 'accept' | 'reject', submission: IFormSubmission) {
-        const title = action === 'accept' ? 'Terima pendaftar' : 'Tolak pendaftar'
-        toast.info(title, {
-            description: `Aksi untuk “${submission.user?.name ?? submission.user?.email ?? submission.id}” belum tersedia. Model form_answers belum memiliki status review. Lihat docs/milestone-m1-m4-remaining.md.`,
-            duration: 8000,
+    function isSubmissionReviewing(submissionId: string): boolean {
+        return reviewingIds.value.has(submissionId)
+    }
+
+    function submitSubmissionReview(action: 'accept' | 'reject', submission: IFormSubmission) {
+        const review_status = action === 'accept' ? 'accepted' : 'rejected'
+        const id = submission.id
+        const nextReviewing = new Set(reviewingIds.value)
+        nextReviewing.add(id)
+        reviewingIds.value = nextReviewing
+
+        const { url, method } = FormAnswerReviewController.patch({
+            event: props.event.id,
+            form: props.form.id,
+            formAnswer: submission.id,
         })
+
+        const clearReviewing = () => {
+            const s = new Set(reviewingIds.value)
+            s.delete(id)
+            reviewingIds.value = s
+        }
+
+        void (async () => {
+            try {
+                const token = readXsrfToken()
+                const res = await fetch(url, {
+                    method: method.toUpperCase(),
+                    headers: {
+                        Accept: 'application/json',
+                        'Content-Type': 'application/json',
+                        ...(token ? { 'X-XSRF-TOKEN': token } : {}),
+                    },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({ review_status }),
+                })
+
+                const body = (await res.json().catch(() => ({}))) as { message?: string }
+
+                if (!res.ok) {
+                    if (res.status === 409) {
+                        toast.error(body.message ?? 'Submission ini sudah pernah direview.')
+                    } else if (res.status === 422) {
+                        toast.error(body.message ?? 'Status review tidak valid.')
+                    } else if (res.status === 403) {
+                        toast.error('Anda tidak punya izin untuk mereview submission ini.')
+                    } else if (res.status === 404) {
+                        toast.error('Submission tidak ditemukan.')
+                    } else {
+                        toast.error(body.message ?? 'Gagal memperbarui status review.')
+                    }
+                    if (res.status === 409 || res.status === 422) {
+                        router.reload({ only: ['submissions'] })
+                    }
+                    return
+                }
+
+                toast.success(action === 'accept' ? 'Submission diterima.' : 'Submission ditolak.')
+
+                router.reload({
+                    only: ['submissions'],
+                    onSuccess: () => {
+                        if (selectedSubmission.value?.id === id) {
+                            const next = props.submissions.data.find((s) => s.id === id)
+                            if (next) selectedSubmission.value = next
+                        }
+                    },
+                })
+            } catch {
+                toast.error('Tidak dapat menghubungi server. Coba lagi.')
+            } finally {
+                clearReviewing()
+            }
+        })()
     }
 
     return {
@@ -99,6 +175,7 @@ export function useFormSubmissionsPage(props: {
         answerPreview,
         fileUrl,
         openDetail,
-        submissionReviewStub,
+        submitSubmissionReview,
+        isSubmissionReviewing,
     }
 }

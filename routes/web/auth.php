@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\Route;
 
 // use App\Http\Controllers\Auth\PageController as AuthPageController;
 
+Route::redirect('/auth', '/auth/login');
+
 // Routes for login and register
 Route::middleware('guest')->group(function () {
     // Route::get('/auth', AuthPageController::class)->middleware('guest')->name('auth.login');

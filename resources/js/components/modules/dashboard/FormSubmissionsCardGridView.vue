@@ -2,7 +2,7 @@
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Clock, FileText, Eye, CheckCircle2, XCircle } from 'lucide-vue-next'
-import { submissionUserInitials } from '@/lib/formSubmissionsUi'
+import { formSubmissionReviewIsPending, submissionUserInitials } from '@/lib/formSubmissionsUi'
 
 defineProps<{
     submissions: IFormSubmission[]
@@ -11,6 +11,7 @@ defineProps<{
     humanizeKey: (v: string) => string
     answerPreview: (v: unknown) => string
     fileUrl: (v: unknown) => string | null
+    isSubmissionReviewing: (submissionId: string) => boolean
 }>()
 
 defineEmits<{
@@ -71,6 +72,7 @@ defineEmits<{
                             type="button"
                             variant="outline"
                             class="gap-1.5 border-success/30 text-success hover:bg-success/10"
+                            :disabled="!formSubmissionReviewIsPending(submission) || isSubmissionReviewing(submission.id)"
                             @click="$emit('review', { action: 'accept', submission })"
                         >
                             <CheckCircle2 class="size-4" />
@@ -80,6 +82,7 @@ defineEmits<{
                             type="button"
                             variant="outline"
                             class="gap-1.5 border-destructive/30 text-destructive hover:bg-destructive/10"
+                            :disabled="!formSubmissionReviewIsPending(submission) || isSubmissionReviewing(submission.id)"
                             @click="$emit('review', { action: 'reject', submission })"
                         >
                             <XCircle class="size-4" />

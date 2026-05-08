@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Enums\EventFormVisibility;
+use App\Enums\EventStatus;
 use App\Models\Event;
 use App\Models\Form;
 use App\Models\FormField;
@@ -13,35 +14,50 @@ class FormSeeder extends Seeder
 {
     public function run(): void
     {
-        $publishedEvents = Event::where('status', 'published')
+        $publishedEvents = Event::query()
+            ->where('status', EventStatus::Published)
             ->whereNull('deleted_at')
             ->get();
 
         foreach ($publishedEvents as $event) {
-            $registrationForm = Form::create([
-                'title' => 'Registration Form',
-                'description' => "Registration form for {$event->title}",
-                'visible_for' => [EventFormVisibility::Public->value],
-                'closed_at' => $event->registration_end,
-                'event_id' => $event->id,
-                'banner_url' => 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=1200',
-                'banner_caption' => 'Fill out the form below to secure your spot!',
-            ]);
-
-            $this->createRegistrationFields($registrationForm);
-
-            if (rand(0, 1)) {
-                $feedbackForm = Form::create([
-                    'title' => 'Feedback Survey',
-                    'description' => "Post-event feedback for {$event->title}",
-                    'visible_for' => [EventFormVisibility::Participant->value],
-                    'closed_at' => $event->end_date->copy()->addDays(7),
+            $registrationForm = Form::query()->firstOrCreate(
+                [
                     'event_id' => $event->id,
-                    'banner_url' => 'https://images.unsplash.com/photo-1551818255-e6e10975bc17?w=1200',
-                    'banner_caption' => 'Your feedback helps us improve future events.',
-                ]);
+                    'title' => 'Registration Form',
+                ],
+                [
+                    'description' => "Registration form for {$event->title}",
+                    'visible_for' => [EventFormVisibility::Public],
+                    'closed_at' => $event->registration_end,
+                    'banner_url' => 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=1200',
+                    'banner_caption' => 'Fill out the form below to secure your spot!',
+                ],
+            );
 
-                $this->createFeedbackFields($feedbackForm);
+            if ($registrationForm->formFields()->count() === 0) {
+                $this->createRegistrationFields($registrationForm);
+            }
+
+            $includeFeedback = crc32($event->id) % 2 === 0;
+
+            if ($includeFeedback) {
+                $feedbackForm = Form::query()->firstOrCreate(
+                    [
+                        'event_id' => $event->id,
+                        'title' => 'Feedback Survey',
+                    ],
+                    [
+                        'description' => "Post-event feedback for {$event->title}",
+                        'visible_for' => [EventFormVisibility::Participant],
+                        'closed_at' => $event->end_date->copy()->addDays(7),
+                        'banner_url' => 'https://images.unsplash.com/photo-1551818255-e6e10975bc17?w=1200',
+                        'banner_caption' => 'Your feedback helps us improve future events.',
+                    ],
+                );
+
+                if ($feedbackForm->formFields()->count() === 0) {
+                    $this->createFeedbackFields($feedbackForm);
+                }
             }
         }
     }

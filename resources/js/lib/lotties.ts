@@ -1,71 +1,64 @@
 import type { LottieRegistry } from '@/types/lottie'
 
 /**
- * Lottie registry — single source of truth for animated illustrations.
- *
- * To add a new Lottie:
- *   1. Download the JSON from https://lottiefiles.com (prefer free / CC0 / CC-BY).
- *   2. Save it to `public/lotties/<kebab-name>.json`.
- *   3. Add a new entry below using a camelCase key.
- *
- * `LocalLottie` resolves entries by `name` prop.
+ * Registri Lottie — berkas JSON di `public/lotties/` (diperbarui untuk set ilustrasi baru).
  */
 export const lotties = {
     heroProduct: {
         src: '/lotties/hero-product.json',
-        label: 'Product workspace illustration',
+        label: 'Ilustrasi workspace formulir',
     },
     stepsFlow: {
         src: '/lotties/steps-flow.json',
-        label: 'Three-step flow illustration',
+        label: 'Ilustrasi alur kerja langkah demi langkah',
     },
     featureModules: {
         src: '/lotties/feature-modules.json',
-        label: 'Feature module stack illustration',
+        label: 'Ilustrasi modul fitur',
     },
     docsFlow: {
         src: '/lotties/docs-flow.json',
-        label: 'Documentation flow illustration',
+        label: 'Ilustrasi dokumentasi',
     },
     authSecure: {
         src: '/lotties/auth-secure.json',
-        label: 'Secure authentication illustration',
+        label: 'Ilustrasi keamanan masuk',
     },
     builderEmpty: {
         src: '/lotties/builder-empty.json',
-        label: 'Builder empty state illustration',
+        label: 'Ilustrasi kanvas builder kosong',
     },
     fieldSelected: {
         src: '/lotties/field-selected.json',
-        label: 'Field inspector illustration',
+        label: 'Ilustrasi field terpilih',
     },
     comingSoon: {
         src: '/lotties/coming-soon.json',
-        label: 'Coming soon illustration',
+        label: 'Ilustrasi segera hadir',
     },
     errorState: {
         src: '/lotties/error-state.json',
-        label: 'Error state illustration',
+        label: 'Ilustrasi kesalahan',
     },
     emptyData: {
         src: '/lotties/empty-data.json',
-        label: 'Empty data illustration',
+        label: 'Ilustrasi data kosong',
     },
     successCheck: {
         src: '/lotties/success-check.json',
-        label: 'Success check illustration',
+        label: 'Ilustrasi berhasil',
     },
     loadingDots: {
         src: '/lotties/loading-dots.json',
-        label: 'Loading indicator',
+        label: 'Indikator memuat',
     },
     eventsLive: {
         src: '/lotties/events-live.json',
-        label: 'Live events illustration',
+        label: 'Ilustrasi acara aktif',
     },
     analyticsPulse: {
         src: '/lotties/analytics-pulse.json',
-        label: 'Analytics pulse illustration',
+        label: 'Ilustrasi analitik',
     },
 } as const satisfies LottieRegistry
 

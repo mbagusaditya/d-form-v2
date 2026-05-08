@@ -1,63 +1,51 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { ChevronRight } from 'lucide-vue-next'
+import { Card, CardContent } from '@/components/ui/card'
+import LocalLottie from '@/components/core/LocalLottie.vue'
+import type { LottieName } from '@/lib/lotties'
 
-interface HowStep {
-    readonly num: string
-    readonly title: string
-    readonly description: string
-}
+interface Step { num: string; title: string; desc: string; lottie: LottieName }
+
+const steps: Step[] = [
+    { num: '01', title: 'Buat acara', desc: 'Tentukan nama, tanggal, dan kapasitas acara Anda.', lottie: 'eventsLive' },
+    { num: '02', title: 'Rancang formulir', desc: 'Tambahkan field pertanyaan, atur urutan, lalu pratinjau.', lottie: 'featureModules' },
+    { num: '03', title: 'Terbitkan & pantau', desc: 'Bagikan link dan lihat respons masuk secara real-time.', lottie: 'analyticsPulse' },
+]
 
 const visible = ref(false)
 onMounted(() => {
-    const observer = new IntersectionObserver(
-        ([entry]) => {
-            if (entry.isIntersecting) visible.value = true
-        },
-        { threshold: 0.1 },
+    const obs = new IntersectionObserver(
+        ([e]) => { if (e?.isIntersecting) { visible.value = true; obs.disconnect() } },
+        { threshold: 0.15 },
     )
-    const el = document.getElementById('feat-how')
-    if (el) observer.observe(el)
+    const el = document.getElementById('features-how')
+    if (el) obs.observe(el)
 })
-
-const steps: readonly HowStep[] = [
-    { num: '01', title: 'Design Your Form', description: 'Use the drag-and-drop builder to add fields, set validations, and customize the look and feel.' },
-    { num: '02', title: 'Publish & Share', description: 'Generate a shareable link or embed the form on your website. Go live in seconds.' },
-    { num: '03', title: 'Analyze Results', description: 'View real-time responses, auto-generated charts, and export data whenever needed.' },
-]
 </script>
 
 <template>
-    <section id="feat-how" class="relative overflow-hidden bg-background py-20 lg:py-28">
-        <div class="pointer-events-none absolute -left-16 top-12 h-72 w-72 rounded-full bg-primary/8 blur-3xl"></div>
-        <div class="relative mx-auto max-w-7xl px-6 lg:px-8">
-            <div :class="['mx-auto max-w-2xl text-center transition-[opacity,transform] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]', visible ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0']">
-                <h2 class="font-display text-3xl font-bold tracking-[-0.035em] text-foreground sm:text-4xl lg:text-5xl">
-                    How it <span class="text-primary">works</span>
-                </h2>
-                <p class="mt-3 text-base leading-relaxed text-muted-foreground">From design to insights in three focused steps.</p>
+    <section id="features-how" class="py-20 md:py-28">
+        <div class="mx-auto max-w-5xl px-5 lg:px-8">
+            <div :class="['mb-12 max-w-md transition-all duration-500', visible ? 'opacity-100' : 'opacity-0']">
+                <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">Cara Kerja</p>
+                <h2 class="mt-2 text-[1.5rem] font-semibold tracking-tight text-foreground sm:text-[1.75rem]">Tiga langkah mudah</h2>
             </div>
-            <div class="mt-14 grid gap-6 lg:grid-cols-3">
-                <div
+            <div class="grid gap-5 sm:grid-cols-3">
+                <Card
                     v-for="(s, i) in steps"
                     :key="s.num"
-                    :class="[
-                        'app-surface relative p-7 transition-[opacity,transform] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]',
-                        visible ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0',
-                    ]"
-                    :style="{ transitionDelay: `${200 + i * 130}ms` }"
+                    :class="['group overflow-hidden border-border/50 transition-all duration-500 hover:border-primary/25', visible ? 'translate-y-0 opacity-100' : 'translate-y-6 opacity-0']"
+                    :style="{ transitionDelay: `${120 + i * 80}ms` }"
                 >
-                    <span class="mb-4 inline-flex size-9 items-center justify-center rounded-lg border border-primary/20 bg-primary/10 text-xs font-semibold text-primary">
-                        {{ s.num }}
-                    </span>
-                    <h3 class="font-display mb-1.5 text-lg font-bold tracking-[-0.02em] text-foreground">{{ s.title }}</h3>
-                    <p class="text-sm leading-relaxed text-muted-foreground">{{ s.description }}</p>
-                    <ChevronRight
-                        v-if="i < steps.length - 1"
-                        class="pointer-events-none absolute -right-4 top-1/2 hidden size-4 -translate-y-1/2 text-primary/40 lg:block"
-                        :stroke-width="2"
-                    />
-                </div>
+                    <CardContent class="flex flex-col items-start p-5">
+                        <span class="text-[32px] font-bold leading-none text-primary/10">{{ s.num }}</span>
+                        <div class="my-4 flex w-full justify-center">
+                            <LocalLottie :name="s.lottie" :height="120" :width="120" />
+                        </div>
+                        <h3 class="text-[14px] font-semibold text-foreground">{{ s.title }}</h3>
+                        <p class="mt-1.5 text-[12px] leading-relaxed text-muted-foreground">{{ s.desc }}</p>
+                    </CardContent>
+                </Card>
             </div>
         </div>
     </section>

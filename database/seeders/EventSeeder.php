@@ -185,9 +185,17 @@ class EventSeeder extends Seeder
             ],
         ];
 
-        collect($events)->each(fn (array $event) => Event::create($event));
+        foreach ($events as $eventData) {
+            $event = Event::withTrashed()->firstOrNew([
+                'title' => $eventData['title'],
+            ]);
+            $event->fill($eventData);
+            if ($event->trashed()) {
+                $event->restore();
+            }
+            $event->save();
+        }
 
-        // Soft-delete the Hackathon event
-        Event::where('title', 'Hackathon: Code for Good')->first()?->delete();
+        Event::query()->where('title', 'Hackathon: Code for Good')->first()?->delete();
     }
 }
