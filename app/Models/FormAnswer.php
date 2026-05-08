@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\FormAnswerReviewStatus;
+use App\Enums\MemberConfirmationStatus;
 use App\Enums\RegistrationRole;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -26,8 +27,12 @@ class FormAnswer extends Model
         'user_id',
         'leader_form_answer_id',
         'registration_role',
-        'status_confirmation_member',
+        'member_confirmation_status',
         'invitation_token',
+        'group_token',
+        'invited_email',
+        'member_confirmed_at',
+        'invitation_expired_at',
         'review_status',
         'reviewed_at',
         'reviewed_by',
@@ -42,10 +47,30 @@ class FormAnswer extends Model
         return [
             'answers' => 'array',
             'registration_role' => RegistrationRole::class,
-            'status_confirmation_member' => 'boolean',
+            'member_confirmation_status' => MemberConfirmationStatus::class,
             'review_status' => FormAnswerReviewStatus::class,
             'reviewed_at' => 'datetime',
+            'member_confirmed_at' => 'datetime',
+            'invitation_expired_at' => 'datetime',
         ];
+    }
+
+    public function isMemberPendingInvitation(): bool
+    {
+        return $this->registration_role === RegistrationRole::Member
+            && $this->member_confirmation_status === MemberConfirmationStatus::Pending;
+    }
+
+    public function isInvitationTerminal(): bool
+    {
+        if ($this->registration_role !== RegistrationRole::Member) {
+            return false;
+        }
+
+        return in_array($this->member_confirmation_status, [
+            MemberConfirmationStatus::Rejected,
+            MemberConfirmationStatus::Expired,
+        ], true);
     }
 
     public function form(): BelongsTo

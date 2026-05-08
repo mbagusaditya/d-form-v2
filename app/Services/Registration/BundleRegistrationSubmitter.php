@@ -13,32 +13,9 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
-final class TeamRegistrationSubmitter
+final class BundleRegistrationSubmitter
 {
-    /**
-     * Total participants including leader (from form metadata).
-     */
-    public static function resolveTeamSize(Form $form): int
-    {
-        $metadata = $form->metadata;
-        if (! is_array($metadata)) {
-            return 0;
-        }
-
-        $teamSize = $metadata['team_size'] ?? null;
-        if (is_numeric($teamSize) && (int) $teamSize >= 2) {
-            return (int) $teamSize;
-        }
-
-        $maxTeam = $metadata['max_team_size'] ?? null;
-        if (is_numeric($maxTeam) && (int) $maxTeam >= 2) {
-            return (int) $maxTeam;
-        }
-
-        return 0;
-    }
-
-    public static function isTeamForm(Form $form): bool
+    public static function isBundleForm(Form $form): bool
     {
         $metadata = $form->metadata;
         if (! is_array($metadata)) {
@@ -47,10 +24,11 @@ final class TeamRegistrationSubmitter
 
         $mode = $metadata['registration_mode'] ?? null;
 
-        return is_string($mode) && strtolower($mode) === 'team';
+        return is_string($mode) && strtolower($mode) === 'bundle';
     }
 
     /**
+     * @param  list<array<string, mixed>>  $memberAnswerRows  one merged answers payload per member (same keys as leader)
      * @param  list<User>  $memberUsers
      * @return array{leader: FormAnswer, members: list<FormAnswer>}
      */
@@ -58,14 +36,22 @@ final class TeamRegistrationSubmitter
         Form $form,
         Event $event,
         User $leaderUser,
-        array $answers,
+        array $leaderAnswers,
+        array $memberAnswerRows,
         array $memberUsers,
         bool $adminExemptFromQuota,
     ): array {
-        $teamSize = self::resolveTeamSize($form);
+        $teamSize = TeamRegistrationSubmitter::resolveTeamSize($form);
+
         if ($teamSize < 2) {
             throw ValidationException::withMessages([
-                'team_member_emails' => __('This team form is misconfigured (team size). Contact the organizer.'),
+                'team_member_emails' => __('This bundle form is misconfigured (team size). Contact the organizer.'),
+            ]);
+        }
+
+        if (count($memberUsers) !== $teamSize - 1 || count($memberAnswerRows) !== count($memberUsers)) {
+            throw ValidationException::withMessages([
+                'team_member_emails' => __('Bundle participants were misconfigured. Try again or contact the organizer.'),
             ]);
         }
 
@@ -81,15 +67,18 @@ final class TeamRegistrationSubmitter
             }
         }
 
-        $memberAnswers = json_decode(json_encode($answers, JSON_THROW_ON_ERROR), true);
+        $memberAnswerRows = array_map(
+            fn (array $row) => json_decode(json_encode($row, JSON_THROW_ON_ERROR), true),
+            $memberAnswerRows
+        );
 
         return DB::transaction(function () use (
             $form,
             $event,
             $leaderUser,
             $memberUsers,
-            $answers,
-            $memberAnswers,
+            $leaderAnswers,
+            $memberAnswerRows,
             $adminExemptFromQuota,
             $teamSize
         ): array {
@@ -105,10 +94,11 @@ final class TeamRegistrationSubmitter
                 throw new QuotaExceededException();
             }
 
+            $groupToken = $this->generateUniqueGroupToken((string) $form->id);
             $inviteExpiresAt = now()->addDays((int) config('registration.invitation_ttl_days', 7));
 
             $leader = FormAnswer::query()->create([
-                'answers' => $answers,
+                'answers' => $leaderAnswers,
                 'form_id' => $form->id,
                 'user_id' => (string) $leaderUser->id,
                 'leader_form_answer_id' => null,
@@ -116,21 +106,23 @@ final class TeamRegistrationSubmitter
                 'member_confirmation_status' => MemberConfirmationStatus::Accepted,
                 'member_confirmed_at' => now(),
                 'invitation_token' => null,
+                'group_token' => $groupToken,
                 'invited_email' => null,
                 'invitation_expired_at' => null,
             ]);
 
             $memberRows = [];
 
-            foreach ($memberUsers as $memberUser) {
+            foreach ($memberUsers as $i => $memberUser) {
                 $memberRows[] = FormAnswer::query()->create([
-                    'answers' => $memberAnswers,
+                    'answers' => $memberAnswerRows[$i],
                     'form_id' => $form->id,
                     'user_id' => (string) $memberUser->id,
                     'leader_form_answer_id' => $leader->id,
                     'registration_role' => RegistrationRole::Member,
                     'member_confirmation_status' => MemberConfirmationStatus::Pending,
                     'invitation_token' => $this->generateUniqueInvitationToken(),
+                    'group_token' => $groupToken,
                     'invited_email' => $memberUser->email,
                     'invitation_expired_at' => $inviteExpiresAt,
                 ]);
@@ -143,6 +135,18 @@ final class TeamRegistrationSubmitter
                 'members' => array_map(fn (FormAnswer $r) => $r->fresh(), $memberRows),
             ];
         });
+    }
+
+    private function generateUniqueGroupToken(string $formId): string
+    {
+        for ($i = 0; $i < 48; $i++) {
+            $token = strtoupper(Str::random(8));
+            if (! FormAnswer::query()->where('form_id', $formId)->where('group_token', $token)->exists()) {
+                return $token;
+            }
+        }
+
+        throw new \RuntimeException('Could not generate a unique group token.');
     }
 
     private function generateUniqueInvitationToken(): string

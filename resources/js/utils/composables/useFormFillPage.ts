@@ -80,6 +80,10 @@ export function useFormFillPage(props: {
                 title: 'Confirm your team invitation',
                 body: fallback,
             },
+            invitation_closed: {
+                title: 'Invitation no longer active',
+                body: fallback,
+            },
             not_visible: { title: 'You do not have access to this form.', body: fallback },
         }
         return map[props.accessStatus]
@@ -99,6 +103,23 @@ export function useFormFillPage(props: {
 
     if (props.memberSlots > 0) {
         initialValues.team_member_emails = Array.from({ length: props.memberSlots }, () => '')
+    }
+
+    if (props.registrationMode === 'bundle' && props.memberSlots > 0) {
+        for (const field of props.fields) {
+            if (isDisplayOnly(field)) continue
+            if (metadata(field).duplicatable !== true) continue
+            for (let i = 0; i < props.memberSlots; i++) {
+                const key = `bundle__${field.name}__${i}`
+                if (field.type === 'checkbox' || (field.type === 'select' && metadata(field).is_multiple)) {
+                    initialValues[key] = []
+                } else if (field.type === 'fileUpload') {
+                    initialValues[key] = null
+                } else {
+                    initialValues[key] = ''
+                }
+            }
+        }
     }
 
     const answerForm = useForm(initialValues as Record<string, unknown>)
@@ -138,9 +159,30 @@ export function useFormFillPage(props: {
         return fallbackOptions.map((label) => ({ type: 'text', label }))
     }
 
-    function getSelectedOptionRow(field: IFormField) {
-        const val = answerForm[field.name] as string
+    function getSelectedOptionRow(field: IFormField, storageKey?: string) {
+        const key = storageKey ?? field.name
+        const val = answerForm[key] as string
         return getOptionRows(field).find((r) => r.label === val)
+    }
+
+    function isBundleDuplicatableField(field: IFormField): boolean {
+        return props.registrationMode === 'bundle' && metadata(field).duplicatable === true && !isDisplayOnly(field)
+    }
+
+    function participationSlotsForField(field: IFormField): { slotIndex: number | null; title: string }[] {
+        if (isBundleDuplicatableField(field)) {
+            const rows: { slotIndex: number | null; title: string }[] = [{ slotIndex: null, title: 'Lead participant' }]
+            for (let i = 0; i < props.memberSlots; i++) {
+                rows.push({ slotIndex: i, title: `Participant ${i + 2}` })
+            }
+            return rows
+        }
+        return [{ slotIndex: null, title: '' }]
+    }
+
+    function answerKeyForSlot(field: IFormField, slotIndex: number | null): string {
+        if (slotIndex === null) return field.name
+        return `bundle__${field.name}__${slotIndex}`
     }
 
     function getInputSubtype(field: IFormField): string {
@@ -219,6 +261,7 @@ export function useFormFillPage(props: {
         answerForm,
         metadata,
         builderType,
+        registrationMode: props.registrationMode,
         formBannerImageSrc,
         formBannerCaption,
         formHasDescription,
@@ -227,6 +270,9 @@ export function useFormFillPage(props: {
         memberSlots,
         getOptionRows,
         getSelectedOptionRow,
+        isBundleDuplicatableField,
+        participationSlotsForField,
+        answerKeyForSlot,
         getInputSubtype,
         getPlaceholder,
         isRequired,

@@ -97,6 +97,9 @@ declare global {
         reviewed_at?: string | null
         reviewed_by?: string | null
         reviewer?: { id: string; name: string; email: string } | null
+        registration_role?: 'leader' | 'member' | null
+        member_confirmation_status?: 'pending' | 'accepted' | 'rejected' | 'expired' | null
+        group_token?: string | null
     }
 
     interface IKpiCard {

@@ -43,6 +43,9 @@ class FormSubmissionsController extends Controller
                 'review_status' => $answer->review_status?->value,
                 'reviewed_at' => $answer->reviewed_at?->toIso8601String(),
                 'reviewed_by' => $answer->reviewed_by,
+                'registration_role' => $answer->registration_role?->value,
+                'member_confirmation_status' => $answer->member_confirmation_status?->value,
+                'group_token' => $answer->group_token,
                 'reviewer' => $answer->reviewer
                     ? [
                         'id' => $answer->reviewer->id,

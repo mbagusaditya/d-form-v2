@@ -6,6 +6,7 @@ use App\Enums\EmailNotificationType;
 use App\Enums\FormAccessStatus;
 use App\Enums\FormAnswerReviewStatus;
 use App\Enums\EventFormVisibility;
+use App\Enums\MemberConfirmationStatus;
 use App\Enums\RegistrationRole;
 use App\Models\Event;
 use App\Models\Form;
@@ -90,6 +91,19 @@ class FormRegistrationTest extends TestCase
             'label'      => 'Full Name',
             'order'      => 1,
             'metadata'   => ['type' => 'text', 'rules' => ['required' => true]],
+        ]);
+    }
+
+    /** Text field repeated per bundle participant (metadata `duplicatable`). */
+    private function duplicatableTextField(Form $form, string $name = 'full_name', int $order = 1): FormField
+    {
+        return FormField::factory()->create([
+            'form_id'    => $form->id,
+            'input_type' => 'input',
+            'name'       => $name,
+            'label'      => 'Full Name',
+            'order'      => $order,
+            'metadata'   => ['type' => 'text', 'rules' => ['required' => true], 'duplicatable' => true],
         ]);
     }
 
@@ -241,12 +255,12 @@ class FormRegistrationTest extends TestCase
             );
     }
 
-    public function test_fill_returns_unsupported_registration_mode_for_bundle_form_when_member(): void
+    public function test_fill_returns_allowed_for_bundle_form_when_member(): void
     {
         $member = $this->member();
         $event  = $this->openEvent();
         $form   = $this->openForm($event, [
-            'metadata' => ['registration_mode' => 'bundle'],
+            'metadata' => ['registration_mode' => 'bundle', 'max_team_size' => 3],
         ]);
         $this->textField($form);
 
@@ -255,7 +269,10 @@ class FormRegistrationTest extends TestCase
             ->assertOk()
             ->assertInertia(
                 fn ($page) => $page
-                    ->where('accessStatus', 'unsupported_registration_mode')
+                    ->component('Dashboard/Events/Forms/Fill')
+                    ->where('accessStatus', 'allowed')
+                    ->where('registrationMode', 'bundle')
+                    ->where('memberSlots', 2)
             );
     }
 
@@ -680,11 +697,11 @@ class FormRegistrationTest extends TestCase
 
         $this->assertSame(RegistrationRole::Leader, $leaderRow->registration_role);
         $this->assertNull($leaderRow->leader_form_answer_id);
-        $this->assertTrue($leaderRow->status_confirmation_member);
+        $this->assertSame(MemberConfirmationStatus::Accepted, $leaderRow->member_confirmation_status);
 
         $this->assertSame(RegistrationRole::Member, $memberRow->registration_role);
         $this->assertSame((string) $leaderRow->id, (string) $memberRow->leader_form_answer_id);
-        $this->assertFalse($memberRow->status_confirmation_member);
+        $this->assertSame(MemberConfirmationStatus::Pending, $memberRow->member_confirmation_status);
         $this->assertNotNull($memberRow->invitation_token);
 
         Mail::assertSent(RegistrationConfirmationMail::class, 1);
@@ -818,7 +835,7 @@ class FormRegistrationTest extends TestCase
             'form_id' => $form->id,
             'user_id' => $this->member()->id,
             'registration_role' => RegistrationRole::Leader,
-            'status_confirmation_member' => true,
+            'member_confirmation_status' => MemberConfirmationStatus::Accepted,
         ]);
 
         $token = 'test-invite-token-'.uniqid();
@@ -828,8 +845,9 @@ class FormRegistrationTest extends TestCase
             'user_id' => $member->id,
             'leader_form_answer_id' => $leader->id,
             'registration_role' => RegistrationRole::Member,
-            'status_confirmation_member' => false,
+            'member_confirmation_status' => MemberConfirmationStatus::Pending,
             'invitation_token' => $token,
+            'invitation_expired_at' => now()->addDays(7),
             'answers' => ['full_name' => 'Member'],
         ]);
 
@@ -860,7 +878,7 @@ class FormRegistrationTest extends TestCase
             'form_id' => $form->id,
             'user_id' => $this->member()->id,
             'registration_role' => RegistrationRole::Leader,
-            'status_confirmation_member' => true,
+            'member_confirmation_status' => MemberConfirmationStatus::Accepted,
         ]);
 
         $token = 'confirm-token-'.uniqid();
@@ -870,17 +888,95 @@ class FormRegistrationTest extends TestCase
             'user_id' => $member->id,
             'leader_form_answer_id' => $leader->id,
             'registration_role' => RegistrationRole::Member,
-            'status_confirmation_member' => false,
+            'member_confirmation_status' => MemberConfirmationStatus::Pending,
             'invitation_token' => $token,
+            'invitation_expired_at' => now()->addDays(7),
             'answers' => ['full_name' => 'Member'],
         ]);
 
         $this->actingAs($member)
-            ->post(route('dashboard.user.team-invitations.update', ['token' => $token], false), [])
+            ->post(route('dashboard.user.team-invitations.update', ['token' => $token], false), [
+                'invitation_decision' => 'accept',
+            ])
             ->assertRedirect(route('dashboard.user.events.show', ['event_segment' => $event->slug], false));
 
         $row->refresh();
-        $this->assertTrue($row->status_confirmation_member);
+        $this->assertSame(MemberConfirmationStatus::Accepted, $row->member_confirmation_status);
+    }
+
+    public function test_bundle_submission_creates_leader_member_rows_with_same_group_token(): void
+    {
+        Mail::fake();
+
+        $leader = $this->memberWithEmail('bundle-leader-'.uniqid().'@example.com');
+        $mate   = $this->memberWithEmail('bundle-mate-'.uniqid().'@example.com');
+        $event  = $this->openEvent();
+        $form   = $this->openForm($event, [
+            'metadata' => [
+                'registration_mode' => 'bundle',
+                'max_team_size' => 2,
+            ],
+        ]);
+        $this->duplicatableTextField($form);
+
+        $this->actingAs($leader)
+            ->post($this->submitPath($event, $form), [
+                'full_name' => 'Lead Person',
+                'bundle__full_name__0' => 'Second Person',
+                'team_member_emails' => [$mate->email],
+            ])
+            ->assertRedirect($this->submitSuccessRedirect($event, $leader));
+
+        $this->assertDatabaseCount('form_answers', 2);
+
+        $leaderRow = FormAnswer::query()->where('form_id', $form->id)->where('user_id', $leader->id)->firstOrFail();
+        $memberRow = FormAnswer::query()->where('form_id', $form->id)->where('user_id', $mate->id)->firstOrFail();
+
+        $this->assertNotNull($leaderRow->group_token);
+        $this->assertSame($leaderRow->group_token, $memberRow->group_token);
+        $this->assertSame(MemberConfirmationStatus::Accepted, $leaderRow->member_confirmation_status);
+        $this->assertSame(MemberConfirmationStatus::Pending, $memberRow->member_confirmation_status);
+        $this->assertSame('Lead Person', $leaderRow->answers['full_name'] ?? null);
+        $this->assertSame('Second Person', $memberRow->answers['full_name'] ?? null);
+
+        Mail::assertSent(TeamInvitationMail::class, 1);
+    }
+
+    public function test_expired_invitation_returns_403_and_marks_expired(): void
+    {
+        $member = $this->member();
+        $event  = $this->openEvent();
+        $form   = $this->openForm($event, [
+            'metadata' => ['registration_mode' => 'team', 'team_size' => 2],
+        ]);
+        $this->textField($form);
+
+        $leader = FormAnswer::factory()->create([
+            'form_id' => $form->id,
+            'user_id' => $this->member()->id,
+            'registration_role' => RegistrationRole::Leader,
+            'member_confirmation_status' => MemberConfirmationStatus::Accepted,
+        ]);
+
+        $token = 'expired-token-'.uniqid();
+
+        $row = FormAnswer::factory()->create([
+            'form_id' => $form->id,
+            'user_id' => $member->id,
+            'leader_form_answer_id' => $leader->id,
+            'registration_role' => RegistrationRole::Member,
+            'member_confirmation_status' => MemberConfirmationStatus::Pending,
+            'invitation_token' => $token,
+            'invitation_expired_at' => now()->subHour(),
+            'answers' => ['full_name' => 'M'],
+        ]);
+
+        $this->actingAs($member)
+            ->get(route('dashboard.user.team-invitations.show', ['token' => $token], false))
+            ->assertForbidden();
+
+        $row->refresh();
+        $this->assertSame(MemberConfirmationStatus::Expired, $row->member_confirmation_status);
     }
 
     // =========================================================================
@@ -1068,7 +1164,7 @@ class FormRegistrationTest extends TestCase
             'form_id' => $form->id,
             'user_id' => $leaderUser->id,
             'registration_role' => RegistrationRole::Leader,
-            'status_confirmation_member' => true,
+            'member_confirmation_status' => MemberConfirmationStatus::Accepted,
             'review_status' => FormAnswerReviewStatus::Pending,
         ]);
 
@@ -1077,8 +1173,9 @@ class FormRegistrationTest extends TestCase
             'user_id' => $memberUser->id,
             'leader_form_answer_id' => $leaderAnswer->id,
             'registration_role' => RegistrationRole::Member,
-            'status_confirmation_member' => false,
+            'member_confirmation_status' => MemberConfirmationStatus::Pending,
             'invitation_token' => 'tok-test-'.uniqid(),
+            'invitation_expired_at' => now()->addDays(7),
             'review_status' => FormAnswerReviewStatus::Pending,
             'answers' => ['full_name' => 'Member'],
         ]);
@@ -1095,6 +1192,50 @@ class FormRegistrationTest extends TestCase
         $this->assertSame(FormAnswerReviewStatus::Pending, $memberAnswer->review_status);
 
         Mail::assertNothingSent();
+    }
+
+    public function test_admin_can_accept_team_member_after_invitation_accepted(): void
+    {
+        Mail::fake();
+
+        $admin = $this->admin();
+        $event = $this->openEvent();
+        $form  = $this->openForm($event, [
+            'metadata' => [
+                'registration_mode' => 'team',
+                'team_size' => 2,
+            ],
+        ]);
+        $memberUser = $this->member();
+        $leaderUser = $this->member();
+
+        $leaderAnswer = FormAnswer::factory()->create([
+            'form_id' => $form->id,
+            'user_id' => $leaderUser->id,
+            'registration_role' => RegistrationRole::Leader,
+            'member_confirmation_status' => MemberConfirmationStatus::Accepted,
+            'review_status' => FormAnswerReviewStatus::Pending,
+        ]);
+
+        $memberAnswer = FormAnswer::factory()->create([
+            'form_id' => $form->id,
+            'user_id' => $memberUser->id,
+            'leader_form_answer_id' => $leaderAnswer->id,
+            'registration_role' => RegistrationRole::Member,
+            'member_confirmation_status' => MemberConfirmationStatus::Accepted,
+            'member_confirmed_at' => now(),
+            'invitation_token' => 'tok-ok-'.uniqid(),
+            'review_status' => FormAnswerReviewStatus::Pending,
+            'answers' => ['full_name' => 'Member'],
+        ]);
+
+        $this->actingAs($admin)
+            ->patchJson($this->reviewPath($event, $form, $memberAnswer), [
+                'review_status' => FormAnswerReviewStatus::Accepted->value,
+            ])
+            ->assertOk();
+
+        Mail::assertSent(RegistrationAcceptedMail::class, 1);
     }
 
     public function test_admin_reject_pending_submission_sends_rejected_mail(): void

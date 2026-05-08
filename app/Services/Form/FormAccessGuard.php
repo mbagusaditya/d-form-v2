@@ -29,8 +29,7 @@ final class FormAccessGuard
      *  2. Form closure (`form.closed_at`)
      *  3. Registration window (`event.registration_start/end`)
      *  4. Quota (`event.quota` vs `event.registered_count`)
-     *  5. Bundle mode (M4c) — not implemented for members
-     *  6. Duplicate / pending team confirmation
+     *  5. Duplicate / pending invitation / terminal invitation
      */
     public static function check(Form $form, Event $event, User $user): FormAccessStatus
     {
@@ -52,11 +51,7 @@ final class FormAccessGuard
             return FormAccessStatus::QuotaFull;
         }
 
-        if (! $isAdmin && self::requiresUnsupportedBundleMode($form)) {
-            return FormAccessStatus::UnsupportedRegistrationMode;
-        }
-
-        return self::duplicateOrTeamPendingStatus($form, $user)
+        return self::duplicateOrInvitationStatus($form, $user)
             ?? FormAccessStatus::Allowed;
     }
 
@@ -78,7 +73,7 @@ final class FormAccessGuard
             return null;
         }
 
-        if ($existing->status_confirmation_member) {
+        if (! $existing->isMemberPendingInvitation()) {
             return null;
         }
 
@@ -140,7 +135,7 @@ final class FormAccessGuard
             && $event->registered_count >= $event->quota;
     }
 
-    private static function duplicateOrTeamPendingStatus(Form $form, User $user): ?FormAccessStatus
+    private static function duplicateOrInvitationStatus(Form $form, User $user): ?FormAccessStatus
     {
         $existing = FormAnswer::query()
             ->where('form_id', $form->id)
@@ -151,28 +146,16 @@ final class FormAccessGuard
             return null;
         }
 
-        if ($existing->registration_role === RegistrationRole::Member && ! $existing->status_confirmation_member) {
-            return FormAccessStatus::PendingTeamConfirmation;
+        if ($existing->registration_role === RegistrationRole::Member) {
+            if ($existing->isMemberPendingInvitation()) {
+                return FormAccessStatus::PendingTeamConfirmation;
+            }
+
+            if ($existing->isInvitationTerminal()) {
+                return FormAccessStatus::InvitationClosed;
+            }
         }
 
         return FormAccessStatus::AlreadySubmitted;
-    }
-
-    /**
-     * Bundle registration (M4c) is not implemented yet — block non-admins.
-     */
-    private static function requiresUnsupportedBundleMode(Form $form): bool
-    {
-        $metadata = $form->metadata;
-        if (! is_array($metadata)) {
-            return false;
-        }
-
-        $mode = $metadata['registration_mode'] ?? 'single';
-        if (! is_string($mode) || $mode === '') {
-            return false;
-        }
-
-        return strtolower($mode) === 'bundle';
     }
 }

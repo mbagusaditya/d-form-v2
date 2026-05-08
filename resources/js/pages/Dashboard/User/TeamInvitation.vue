@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { Head, useForm } from '@inertiajs/vue3'
+import { Head, useForm, router } from '@inertiajs/vue3'
 import FormFillLayout from '@/layouts/FormFillLayout.vue'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -97,20 +97,26 @@ function onCheckboxToggle(fieldName: string, option: string, checked: boolean) {
 }
 
 function submitConfirm() {
-    confirmForm.post(props.confirmUrl, { forceFormData: true })
+    confirmForm
+        .transform((data) => ({ ...data, invitation_decision: 'accept' as const }))
+        .post(props.confirmUrl, { forceFormData: true })
+}
+
+function submitReject() {
+    router.post(props.confirmUrl, { invitation_decision: 'reject' })
 }
 </script>
 
 <template>
-    <Head title="Team invitation" />
+    <Head title="Registration invitation" />
 
     <div class="mx-auto max-w-2xl px-2 pb-16">
-        <h1 class="font-display mt-6 text-2xl font-bold tracking-tight text-foreground">Team registration</h1>
+        <h1 class="font-display mt-6 text-2xl font-bold tracking-tight text-foreground">Registration invitation</h1>
         <p class="mt-1 text-sm text-muted-foreground">
             {{ event.title }} — {{ form.title }}
         </p>
         <p class="mt-4 text-sm text-muted-foreground">
-            Team leader: <span class="font-medium text-foreground">{{ leader.name }} ({{ leader.email }})</span>
+            Invited by: <span class="font-medium text-foreground">{{ leader.name }} ({{ leader.email }})</span>
         </p>
 
         <Card v-if="alreadyConfirmed" class="mt-8 border-success/30 bg-success/5">
@@ -125,7 +131,7 @@ function submitConfirm() {
 
         <template v-else>
             <p class="mt-6 text-sm leading-relaxed text-muted-foreground">
-                Review the details below. You may update fields marked as editable, then confirm to complete your registration.
+                Review the details below. You may update fields marked as editable, then accept or decline this invitation.
             </p>
 
             <div class="mt-8 flex flex-col gap-6">
@@ -230,10 +236,13 @@ function submitConfirm() {
                 </template>
             </div>
 
-            <div class="mt-10 flex justify-end border-t border-border pt-6">
+            <div class="mt-10 flex flex-wrap justify-end gap-3 border-t border-border pt-6">
+                <Button type="button" variant="outline" size="lg" :disabled="confirmForm.processing" @click="submitReject">
+                    Decline
+                </Button>
                 <Button type="button" size="lg" class="gap-2" :disabled="confirmForm.processing" @click="submitConfirm">
                     <Send class="size-4" />
-                    Confirm registration
+                    Accept invitation
                 </Button>
             </div>
         </template>

@@ -11,6 +11,7 @@ enum FormAccessStatus: string
     case QuotaFull = 'quota_full';
     case UnsupportedRegistrationMode = 'unsupported_registration_mode';
     case PendingTeamConfirmation = 'pending_team_confirmation';
+    case InvitationClosed = 'invitation_closed';
     case AlreadySubmitted = 'already_submitted';
 
     public function message(): string
@@ -23,6 +24,7 @@ enum FormAccessStatus: string
             self::QuotaFull         => 'Registration is full. No more submissions are being accepted.',
             self::UnsupportedRegistrationMode => 'This registration type is not available yet. Please check back later or contact the organizer.',
             self::PendingTeamConfirmation => 'You have a pending team invitation for this form. Please confirm your registration using the link we emailed you.',
+            self::InvitationClosed => 'Your registration invitation is no longer active.',
             self::AlreadySubmitted  => 'You have already submitted this form.',
         };
     }

@@ -2,38 +2,49 @@
 
 namespace App\Http\Controllers\Dashboard\User;
 
+use App\Enums\MemberConfirmationStatus;
+use App\Enums\RegistrationRole;
 use App\Http\Controllers\Controller;
 use App\Models\FormAnswer;
 use App\Models\FormField;
-use App\Enums\RegistrationRole;
 use App\Services\Form\RulesBuilder;
+use App\Services\Registration\BundleRegistrationSubmitter;
 use App\Services\Registration\TeamRegistrationSubmitter;
 use App\Support\FormFieldTypeMapping;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class TeamInvitationController extends Controller
 {
     public function show(Request $request, string $token): Response
     {
-        $answer = FormAnswer::query()
-            ->where('invitation_token', $token)
-            ->with([
-                'form.event',
-                'form.formFields' => fn ($q) => $q->orderBy('order'),
-                'teamLeaderSubmission.user',
-                'user',
-            ])
-            ->firstOrFail();
+        $answer = $this->loadInvitationAnswer($token);
 
         abort_unless((string) $answer->user_id === (string) $request->user()->id, 403);
         abort_unless($answer->registration_role === RegistrationRole::Member, 404);
 
         $form = $answer->form;
-        abort_unless($form !== null && TeamRegistrationSubmitter::isTeamForm($form), 404);
+        abort_unless(
+            $form !== null && (TeamRegistrationSubmitter::isTeamForm($form) || BundleRegistrationSubmitter::isBundleForm($form)),
+            404
+        );
+
+        $this->applyPendingExpiry($answer);
+
+        if ($answer->member_confirmation_status === MemberConfirmationStatus::Expired) {
+            throw new HttpException(403, __('This invitation has expired.'));
+        }
+
+        if ($answer->member_confirmation_status === MemberConfirmationStatus::Rejected) {
+            throw new HttpException(403, __('This invitation was declined.'));
+        }
+
+        $form->loadMissing(['formFields' => fn ($q) => $q->orderBy('order'), 'event']);
 
         $fields = $form->formFields
             ->map(fn (FormField $f) => $this->fieldToInertia($f))
@@ -58,37 +69,60 @@ class TeamInvitationController extends Controller
                 'name'  => $leaderUser?->name ?? '',
                 'email' => $leaderUser?->email ?? '',
             ],
-            'alreadyConfirmed' => (bool) $answer->status_confirmation_member,
+            'alreadyConfirmed' => $answer->member_confirmation_status === MemberConfirmationStatus::Accepted,
             'confirmUrl'       => route('dashboard.user.team-invitations.update', ['token' => $token], false),
         ]);
     }
 
     public function update(Request $request, string $token): RedirectResponse
     {
-        $answer = FormAnswer::query()
-            ->where('invitation_token', $token)
-            ->with(['form.formFields' => fn ($q) => $q->orderBy('order')])
-            ->firstOrFail();
+        $answer = $this->loadInvitationAnswer($token);
 
         abort_unless((string) $answer->user_id === (string) $request->user()->id, 403);
         abort_unless($answer->registration_role === RegistrationRole::Member, 404);
 
         $form = $answer->form;
-        abort_unless($form !== null && TeamRegistrationSubmitter::isTeamForm($form), 404);
+        abort_unless(
+            $form !== null && (TeamRegistrationSubmitter::isTeamForm($form) || BundleRegistrationSubmitter::isBundleForm($form)),
+            404
+        );
         $form->loadMissing('event');
 
-        if ($answer->status_confirmation_member) {
+        $this->applyPendingExpiry($answer);
+
+        if ($answer->member_confirmation_status !== MemberConfirmationStatus::Pending) {
             return redirect()->route('dashboard.user.team-invitations.show', ['token' => $token]);
         }
 
-        $appendableFields = $form->formFields->where('is_append', true)->values();
+        $data = $request->validate([
+            'invitation_decision' => ['required', Rule::in(['accept', 'reject'])],
+        ]);
 
-        if ($appendableFields->isEmpty()) {
-            $answer->forceFill(['status_confirmation_member' => true])->save();
+        if ($data['invitation_decision'] === 'reject') {
+            $answer->forceFill([
+                'member_confirmation_status' => MemberConfirmationStatus::Rejected,
+            ])->save();
 
             Inertia::flash('toast', [
                 'type' => 'success',
-                'message' => __('Thank you — your team registration is confirmed.'),
+                'message' => __('You have declined this registration invitation.'),
+            ]);
+
+            return redirect()->route('dashboard.user.events.show', ['event_segment' => $form->event->slug]);
+        }
+
+        $form->loadMissing(['formFields' => fn ($q) => $q->orderBy('order')]);
+        $appendableFields = $form->formFields->where('is_append', true)->values();
+
+        if ($appendableFields->isEmpty()) {
+            $answer->forceFill([
+                'member_confirmation_status' => MemberConfirmationStatus::Accepted,
+                'member_confirmed_at' => now(),
+            ])->save();
+
+            Inertia::flash('toast', [
+                'type' => 'success',
+                'message' => __('Thank you — your registration is confirmed.'),
             ]);
 
             return redirect()->route('dashboard.user.events.show', ['event_segment' => $form->event->slug]);
@@ -136,15 +170,42 @@ class TeamInvitationController extends Controller
 
         $answer->forceFill([
             'answers' => $answers,
-            'status_confirmation_member' => true,
+            'member_confirmation_status' => MemberConfirmationStatus::Accepted,
+            'member_confirmed_at' => now(),
         ])->save();
 
         Inertia::flash('toast', [
             'type' => 'success',
-            'message' => __('Thank you — your team registration is confirmed.'),
+            'message' => __('Thank you — your registration is confirmed.'),
         ]);
 
         return redirect()->route('dashboard.user.events.show', ['event_segment' => $form->event->slug]);
+    }
+
+    private function loadInvitationAnswer(string $token): FormAnswer
+    {
+        return FormAnswer::query()
+            ->where('invitation_token', $token)
+            ->with([
+                'form.event',
+                'form.formFields' => fn ($q) => $q->orderBy('order'),
+                'teamLeaderSubmission.user',
+                'user',
+            ])
+            ->firstOrFail();
+    }
+
+    private function applyPendingExpiry(FormAnswer $answer): void
+    {
+        if ($answer->member_confirmation_status !== MemberConfirmationStatus::Pending) {
+            return;
+        }
+
+        if ($answer->invitation_expired_at !== null && now()->isAfter($answer->invitation_expired_at)) {
+            $answer->forceFill([
+                'member_confirmation_status' => MemberConfirmationStatus::Expired,
+            ])->save();
+        }
     }
 
     /**

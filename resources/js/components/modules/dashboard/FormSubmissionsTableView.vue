@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { FileText, Eye, CheckCircle2, XCircle } from 'lucide-vue-next'
-import { formSubmissionReviewIsPending, submissionReviewBadge, submissionUserInitials } from '@/lib/formSubmissionsUi'
+import { formSubmissionReviewIsPending, submissionAdminAcceptBlocked, submissionReviewBadge, submissionUserInitials } from '@/lib/formSubmissionsUi'
 
 defineProps<{
     submissions: IFormSubmission[]
@@ -120,7 +120,7 @@ defineEmits<{
                                         title="Terima pengiriman"
                                         aria-label="Terima pengiriman"
                                         class="text-success hover:bg-success/10 hover:text-success"
-                                        :disabled="isSubmissionReviewing(submission.id)"
+                                        :disabled="isSubmissionReviewing(submission.id) || submissionAdminAcceptBlocked(submission)"
                                         @click="$emit('review', { action: 'accept', submission })"
                                     >
                                         <CheckCircle2 class="size-4" />

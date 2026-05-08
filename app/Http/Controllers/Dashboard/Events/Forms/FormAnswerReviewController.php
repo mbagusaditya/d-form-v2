@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Dashboard\Events\Forms;
 
 use App\Enums\FormAnswerReviewStatus;
+use App\Enums\MemberConfirmationStatus;
 use App\Http\Controllers\Controller;
 use App\Jobs\SendRegistrationAcceptedJob;
 use App\Jobs\SendRegistrationRejectedJob;
@@ -52,12 +53,12 @@ class FormAnswerReviewController extends Controller
             ], 422);
         }
 
-        // Team members must confirm (PRD §4.2) before admin can accept their submission.
+        // Team / bundle members must accept the invitation before admin can accept their submission.
         if ($newStatus === FormAnswerReviewStatus::Accepted
             && $formAnswer->registration_role === RegistrationRole::Member
-            && ! $formAnswer->status_confirmation_member) {
+            && $formAnswer->member_confirmation_status !== MemberConfirmationStatus::Accepted) {
             return response()->json([
-                'message' => __('This team member must confirm their registration before it can be accepted.'),
+                'message' => __('This participant must confirm their registration before it can be accepted.'),
             ], 422);
         }
 

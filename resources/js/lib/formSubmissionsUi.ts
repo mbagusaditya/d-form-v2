@@ -35,6 +35,14 @@ export function submissionPaginationLabel(value: string): string {
         .replace('Next', 'Berikutnya')
 }
 
+/** True when admin must not accept until the member confirms (team / bundle). */
+export function submissionAdminAcceptBlocked(sub: {
+    registration_role?: string | null
+    member_confirmation_status?: string | null
+}): boolean {
+    return sub.registration_role === 'member' && sub.member_confirmation_status !== 'accepted'
+}
+
 /** Matches {@see App\Enums\FormAnswerReviewStatus} — pending answers can be reviewed. */
 export function formSubmissionReviewIsPending(submission: {
     review_status?: 'pending' | 'accepted' | 'rejected' | null

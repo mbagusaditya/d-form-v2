@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Clock, FileText, Eye, CheckCircle2, XCircle } from 'lucide-vue-next'
-import { formSubmissionReviewIsPending, submissionReviewBadge, submissionUserInitials } from '@/lib/formSubmissionsUi'
+import { formSubmissionReviewIsPending, submissionAdminAcceptBlocked, submissionReviewBadge, submissionUserInitials } from '@/lib/formSubmissionsUi'
 
 defineProps<{
     submissions: IFormSubmission[]
@@ -89,7 +89,7 @@ defineEmits<{
                             type="button"
                             variant="outline"
                             class="h-11 w-full gap-1.5 border-success/30 text-success hover:bg-success/10"
-                            :disabled="isSubmissionReviewing(submission.id)"
+                            :disabled="isSubmissionReviewing(submission.id) || submissionAdminAcceptBlocked(submission)"
                             @click="$emit('review', { action: 'accept', submission })"
                         >
                             <CheckCircle2 class="size-4" />

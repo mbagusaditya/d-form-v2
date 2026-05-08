@@ -8,6 +8,7 @@ use App\Models\Event;
 use App\Models\Form;
 use App\Models\FormField;
 use App\Services\Form\FormAccessGuard;
+use App\Services\Registration\BundleRegistrationSubmitter;
 use App\Services\Registration\TeamRegistrationSubmitter;
 use App\Support\FormFieldTypeMapping;
 use Illuminate\Http\Request;
@@ -32,7 +33,9 @@ class FormFillController extends Controller
 
         $closed = $form->closed_at;
 
-        $teamSize    = TeamRegistrationSubmitter::isTeamForm($form) ? TeamRegistrationSubmitter::resolveTeamSize($form) : 0;
+        $teamSize = TeamRegistrationSubmitter::isTeamForm($form) || BundleRegistrationSubmitter::isBundleForm($form)
+            ? TeamRegistrationSubmitter::resolveTeamSize($form)
+            : 0;
         $memberSlots = $teamSize >= 2 ? $teamSize - 1 : 0;
 
         $metadata        = is_array($form->metadata) ? $form->metadata : [];
