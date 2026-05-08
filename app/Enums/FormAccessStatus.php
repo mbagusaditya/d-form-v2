@@ -9,6 +9,7 @@ enum FormAccessStatus: string
     case FormClosed = 'form_closed';
     case RegistrationNotOpen = 'registration_not_open';
     case QuotaFull = 'quota_full';
+    case UnsupportedRegistrationMode = 'unsupported_registration_mode';
     case AlreadySubmitted = 'already_submitted';
 
     public function message(): string
@@ -19,6 +20,7 @@ enum FormAccessStatus: string
             self::FormClosed        => 'This form is no longer accepting submissions.',
             self::RegistrationNotOpen => 'Registration for this event is not currently open.',
             self::QuotaFull         => 'Registration is full. No more submissions are being accepted.',
+            self::UnsupportedRegistrationMode => 'This registration type is not available yet. Please check back later or contact the organizer.',
             self::AlreadySubmitted  => 'You have already submitted this form.',
         };
     }

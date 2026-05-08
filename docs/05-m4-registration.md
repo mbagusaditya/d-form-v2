@@ -42,8 +42,11 @@ Before any fill or submit action is processed, `FormAccessGuard::check(Form, Eve
 | 2 | `form_closed` | `form.closed_at` is set and is in the past | No — even admins see this state |
 | 3 | `registration_not_open` | Current time is before `event.registration_start` or after `event.registration_end` | Yes |
 | 4 | `quota_full` | `event.registered_count >= event.quota` (and quota is set) | Yes |
-| 5 | `already_submitted` | A `form_answers` row exists for this `(user_id, form_id)` pair | No |
+| 5 | `unsupported_registration_mode` | `forms.metadata.registration_mode` is `team` or `bundle` (M4b / M4c — not implemented for members yet) | Yes — admins may open the fill page for preview/testing |
+| 6 | `already_submitted` | A `form_answers` row exists for this `(user_id, form_id)` pair | No |
 | — | `allowed` | All checks passed | — |
+
+Legacy forms with `metadata` null or `registration_mode` omitted are treated as **single** registrant mode.
 
 `FormAccessStatus::isBlocked()` returns `true` for all values except `allowed`.
 
@@ -91,6 +94,7 @@ The `Form.visible_for` column is a JSON array of `EventFormVisibility` enum valu
 | `form_closed` | Show "This form is closed" banner; hide the form |
 | `registration_not_open` | Show "Registration is not currently open" banner; hide the form |
 | `quota_full` | Show "Registration is full" banner; hide the form |
+| `unsupported_registration_mode` | Explain that this registration type is not available yet; hide submit |
 | `not_visible` | Show generic "You do not have access" banner; hide the form |
 
 > The form fields are **always** returned regardless of `accessStatus` so the page can optionally render a preview. Only submit functionality should be gated.
@@ -125,7 +129,7 @@ Validation rules are built dynamically from each `FormField.metadata.rules` obje
 | `select` (is_multiple) | `required\|nullable`, `array` |
 | `radio` | `required\|nullable`, `in:<options>` |
 | `checkbox` | `required\|nullable`, `array`; each item: `in:<options>` |
-| `fileUpload` | `required\|nullable`, `mimes`, `max` (KB) |
+| `fileUpload` | `required\|nullable`, `file`, `mimes:…`, `max:…` (kilobytes) |
 
 If validation fails the server redirects back to the fill page with errors available via `$page.props.errors` (standard Laravel/Inertia pattern).
 
@@ -135,7 +139,12 @@ The `registered_count` increment happens inside a DB transaction that acquires a
 
 ### Success response
 
-On success the user is redirected to `dashboard.events.show` with:
+On success, [`FormSubmissionController`](app/Http/Controllers/Dashboard/Events/Forms/FormSubmissionController.php) flashes a success toast and redirects:
+
+- Users **with** the `events.view` permission (organizers) → `dashboard.events.show` for the event.
+- Everyone else (typical members) → `dashboard.user.events.show` with the event `slug`.
+
+In both cases the session receives:
 
 ```json
 {
@@ -217,40 +226,16 @@ This is a DB-level enforcement of the one-submission-per-user-per-form rule (app
 
 ### Fill page (`Dashboard/Events/Forms/Fill.vue`)
 
-- [x] Already implemented (see existing `Fill.vue`)
-- [ ] Replace `alreadySubmitted` boolean check with `accessStatus !== 'allowed'` check
-- [ ] Display `accessMessage` (from props) instead of a hardcoded string when blocked
-- [ ] Keep `forceFormData: true` on `useForm` for file upload support
+- [x] Uses `accessStatus` / `accessMessage` from the server ([`useFormFillPage`](resources/js/utils/composables/useFormFillPage.ts))
+- [x] Submits with `forceFormData: true` for file fields
 
-### Submissions page (`Dashboard/Events/Forms/Submissions.vue`) — new page
+### Submissions page (`Dashboard/Events/Forms/Submissions.vue`)
 
-- [ ] Create `resources/js/pages/Dashboard/Events/Forms/Submissions.vue`
-- [ ] Accept props: `event`, `form`, `submissions` (paginator)
-- [ ] Render paginated table: name, email, answer values, submitted_at
-- [ ] Add pagination controls using the `submissions.links` array
-- [ ] Link from admin form show page (`Show.vue`) to this page via `route('dashboard.events.forms.submissions', {event, form})`
+- [x] Implemented; dinavigasi dari halaman admin form (`Show.vue`) ke `dashboard.events.forms.submissions`
 
-### TypeScript types (`resources/js/types/event.d.ts`)
+### Types
 
-Add the following interface:
-
-```ts
-interface IFormSubmission {
-  id: string
-  user: { id: string; name: string; email: string } | null
-  answers: Record<string, unknown>
-  submitted_at: string
-}
-```
-
-Update `IForm` to allow `closed_at` to be `string | null` (currently declared as required `string`):
-
-```ts
-interface IForm {
-  // ...
-  closed_at: string | null
-}
-```
+- [x] `IFormSubmission` dan tipe terkait ada di [`resources/js/types/event.d.ts`](resources/js/types/event.d.ts) dan modul terkait; `FormAccessStatus` di [`resources/js/types/form.ts`](resources/js/types/form.ts) termasuk `unsupported_registration_mode`.
 
 ---
 

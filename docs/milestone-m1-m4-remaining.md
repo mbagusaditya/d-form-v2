@@ -2,6 +2,8 @@
 
 Dokumen ini melengkapi implementasi terbaru (Inertia/Vue): apa yang **sengaja tidak** dibuat karena **belum ada service/controller/migrasi** di backend, plus **alur web & bisnis** yang masih perlu diputuskan atau dikerjakan tim.
 
+**Pembaruan:** bagian review registrasi dan email di bawah diselaraskan dengan kode saat ini (bukan lagi “toast saja”).
+
 **Cara baca:** bagian “Status” memakai legenda: **Ada BE** (bisa dilanjut FE), **Perlu BE baru**, **Produk/kebijakan**.
 
 ---
@@ -10,11 +12,12 @@ Dokumen ini melengkapi implementasi terbaru (Inertia/Vue): apa yang **sengaja ti
 
 | Item | Status | Catatan |
 |------|--------|--------|
-| Lupa password (email reset) Inertia | **Perlu BE baru** | Belum ada route/controller `PasswordReset`; tidak diimplementasikan sesuai aturan “tanpa BE”. |
-| Review submission (Accept / Reject) | **Perlu BE baru** | Tabel `form_answers` tidak punya kolom status review; UI tombol sudah ada dan memunculkan toast penjelasan. |
-| Email konfirmasi / antrian penuh | **Ada BE parsial** | Ada job terkait registrasi di controller submit; detail di luar scope M1–M4 dokumen ini. |
-| Publik daftar/detail event | **Ada BE** | `EventsController` kini mengirim event `published` ke halaman `Event` / `EventDetail`. |
-| Satu jalur pendaftaran member | **Ada BE** | `/dashboard/user/events/{event}/register` diarahkan ke `FormFillController` (`Fill.vue`). |
+| Lupa password (email reset) Inertia | **Perlu BE baru** | Route/controller reset Laravel standar + halaman Vue bila belum dilengkapi. |
+| Review submission (Accept / Reject) | **Ada BE** | Kolom `review_status` pada `form_answers`, `PATCH` [`FormAnswerReviewController`](app/Http/Controllers/Dashboard/Events/Forms/FormAnswerReviewController.php), policy; lihat [`FormRegistrationTest`](tests/Feature/Forms/FormRegistrationTest.php). |
+| Email konfirmasi / antrian | **Ada BE** | [`SendRegistrationConfirmationJob`](app/Jobs/SendRegistrationConfirmationJob.php) di-dispatch dari [`FormSubmissionController`](app/Http/Controllers/Dashboard/Events/Forms/FormSubmissionController.php) `afterCommit()`. |
+| Pendaftaran tim / bundle (metadata `registration_mode`) | **Gate M4** | Anggota **diblok** untuk `team` dan `bundle` sampai M4b/M4c; admin tetap bisa buka halaman isi (pratinjau). Lihat [`FormAccessGuard`](app/Services/Form/FormAccessGuard.php). |
+| Publik daftar/detail event | **Ada BE** | `EventsController` mengirim event `published` ke halaman publik. |
+| Satu jalur pendaftaran member | **Ada BE** | `/dashboard/user/events/{event}/register` mengarah ke [`FormFillController`](app/Http/Controllers/Dashboard/Events/Forms/FormFillController.php) (`Fill.vue`). |
 
 ---
 
@@ -54,14 +57,13 @@ flowchart TB
 
 ### 1. Persetujuan pendaftaran (Accept / Reject)
 
-- **Hari ini:** admin hanya melihat jawaban; tombol Accept/Reject memanggil **toast informasi** (tidak mengubah data).
-- **Yang dibutuhkan:** misalnya kolom `review_status` (enum: `pending`, `accepted`, `rejected`) + timestamp + `reviewed_by` pada `form_answers`, policy, route `PATCH`, dan optional notifikasi ke member.
-- **Alur bisnis target:** admin membuka submissions → memilih peserta → Accept/Reject → member melihat status di halaman event (butuh FE tambahan).
+- **Status teknis:** admin dapat Accept/Reject lewat daftar submissions; status tercermin di `review_status`; pengujian otomatis di `FormRegistrationTest`.
+- **Opsi produk lanjutan:** notifikasi in-app ke member saat status berubah (selain email yang sudah ada untuk jalur tertentu).
 
 ### 2. Lupa password
 
-- **Hari ini:** hanya login/register Inertia + OAuth.
-- **Yang dibutuhkan:** route guest `auth/forgot-password`, `auth/reset-password`, controller, Mailable atau Laravel default broker, halaman Vue, rate limit.
+- **Hari ini:** login/register Inertia + OAuth (sesuai konfigurasi proyek).
+- **Yang dibutuhkan bila MVP mewajibkan:** route guest `auth/forgot-password`, `auth/reset-password`, broker, halaman Vue, rate limit.
 
 ### 3. Multi-form per event
 
@@ -71,19 +73,20 @@ flowchart TB
 ### 4. Data dashboard member
 
 - **Hari ini:** user tanpa `events.list` hanya melihat agregat dari **event published** (bukan seluruh event internal).
-- **Opsi lanjutan:** KPI “Events Joined” di `Dashboard/Index.vue` masih angka statis — bisa dihubungkan ke query `form_answers` ketika BE siap.
+- **Opsi lanjutan:** KPI “Events Joined” di `Dashboard/Index.vue` — hubungkan ke query `form_answers` jika diinginkan.
 
 ---
 
 ## Perintah setelah pull (tim)
 
-1. `composer update` — menghapus paket `livewire/*` dan `filament/*` dari `composer.json`.
-2. `php artisan optimize:clear`
-3. `npm install && npm run build` (atau `npm run dev`).
+1. `composer install` — ikuti `composer.json` proyek (versi paket dapat berubah).
+2. `php artisan migrate`
+3. `php artisan optimize:clear`
+4. `npm install && npm run build` (atau `npm run dev`).
 
 ---
 
 ## Referensi
 
 - [docs/milestone.md](milestone.md)
-- [docs/milestone-m1-m4-post-implementation-analysis.md](milestone-m1-m4-post-implementation-analysis.md)
+- [docs/05-m4-registration.md](05-m4-registration.md)

@@ -28,7 +28,8 @@ final class FormAccessGuard
      *  2. Form closure (`form.closed_at`)
      *  3. Registration window (`event.registration_start/end`)
      *  4. Quota (`event.quota` vs `event.registered_count`)
-     *  5. Duplicate submission
+     *  5. Team / bundle registration (M4b / M4c — blocked for non-admins until implemented)
+     *  6. Duplicate submission
      */
     public static function check(Form $form, Event $event, User $user): FormAccessStatus
     {
@@ -48,6 +49,10 @@ final class FormAccessGuard
 
         if (! $isAdmin && self::isQuotaFull($event)) {
             return FormAccessStatus::QuotaFull;
+        }
+
+        if (! $isAdmin && self::requiresTeamOrBundleRegistrationFlow($form)) {
+            return FormAccessStatus::UnsupportedRegistrationMode;
         }
 
         if (self::hasAlreadySubmitted($form, $user)) {
@@ -125,5 +130,23 @@ final class FormAccessGuard
             ->where('form_id', $form->id)
             ->where('user_id', $user->id)
             ->exists();
+    }
+
+    /**
+     * Team and bundle flows (PRD §4.2 / §4.3) are not part of M4 single-registrant submit.
+     */
+    private static function requiresTeamOrBundleRegistrationFlow(Form $form): bool
+    {
+        $metadata = $form->metadata;
+        if (! is_array($metadata)) {
+            return false;
+        }
+
+        $mode = $metadata['registration_mode'] ?? 'single';
+        if (! is_string($mode) || $mode === '') {
+            return false;
+        }
+
+        return in_array(strtolower($mode), ['team', 'bundle'], true);
     }
 }

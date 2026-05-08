@@ -70,6 +70,10 @@ export function useFormFillPage(props: {
             form_closed: { title: 'Registration is closed.', body: fallback },
             registration_not_open: { title: 'Registration is not currently open.', body: fallback },
             quota_full: { title: 'Registration is full.', body: fallback },
+            unsupported_registration_mode: {
+                title: 'This registration type is not available yet.',
+                body: fallback,
+            },
             not_visible: { title: 'You do not have access to this form.', body: fallback },
         }
         return map[props.accessStatus]

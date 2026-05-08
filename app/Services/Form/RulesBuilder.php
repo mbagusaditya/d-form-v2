@@ -70,6 +70,10 @@ class RulesBuilder
                 }
             }
 
+            if ($field->input_type === 'fileUpload') {
+                $ruleSet['is_file'] = true;
+            }
+
             return [
                 (string) $field->name => $ruleSet,
             ];
@@ -108,6 +112,31 @@ class RulesBuilder
             if ($isMultiple) {
                 $mappedRules[] = $isRequired ? 'required' : 'nullable';
                 $mappedRules[] = 'array';
+                $laravelRules[$fieldName] = $mappedRules;
+                continue;
+            }
+
+            $isFile = ! empty($rules['is_file']);
+
+            if ($isFile) {
+                $mappedRules   = [];
+                $mappedRules[] = $isRequired ? 'required' : 'nullable';
+                $mappedRules[] = 'file';
+                $mimesVal = $rules['mimes'] ?? '';
+                if ($mimesVal !== '') {
+                    $extensions = array_map(
+                        'trim',
+                        explode(',', str_replace(' ', '', (string) $mimesVal))
+                    );
+                    $extensions = array_filter($extensions);
+                    if ($extensions !== []) {
+                        $mappedRules[] = 'mimes:'.implode(',', $extensions);
+                    }
+                }
+                $maxKb = $rules['max_size'] ?? '';
+                if ($maxKb !== '') {
+                    $mappedRules[] = 'max:'.(string) $maxKb;
+                }
                 $laravelRules[$fieldName] = $mappedRules;
                 continue;
             }
