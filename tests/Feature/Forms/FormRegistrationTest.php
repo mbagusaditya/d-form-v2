@@ -3,6 +3,7 @@
 namespace Tests\Feature\Forms;
 
 use App\Enums\EmailNotificationType;
+use App\Enums\FormAccessStatus;
 use App\Enums\FormAnswerReviewStatus;
 use App\Enums\EventFormVisibility;
 use App\Models\Event;
@@ -206,6 +207,80 @@ class FormRegistrationTest extends TestCase
                  );
     }
 
+    public function test_fill_returns_unsupported_registration_mode_for_team_form_when_member(): void
+    {
+        $member = $this->member();
+        $event  = $this->openEvent();
+        $form   = $this->openForm($event, [
+            'metadata' => ['registration_mode' => 'team'],
+        ]);
+        $this->textField($form);
+
+        $this->actingAs($member)
+            ->get($this->fillPath($event, $form))
+            ->assertOk()
+            ->assertInertia(
+                fn ($page) => $page
+                    ->component('Dashboard/Events/Forms/Fill')
+                    ->where('accessStatus', 'unsupported_registration_mode')
+                    ->where('accessMessage', FormAccessStatus::UnsupportedRegistrationMode->message())
+            );
+    }
+
+    public function test_fill_returns_unsupported_registration_mode_for_bundle_form_when_member(): void
+    {
+        $member = $this->member();
+        $event  = $this->openEvent();
+        $form   = $this->openForm($event, [
+            'metadata' => ['registration_mode' => 'bundle'],
+        ]);
+        $this->textField($form);
+
+        $this->actingAs($member)
+            ->get($this->fillPath($event, $form))
+            ->assertOk()
+            ->assertInertia(
+                fn ($page) => $page
+                    ->where('accessStatus', 'unsupported_registration_mode')
+            );
+    }
+
+    public function test_fill_returns_allowed_when_registration_mode_is_single_for_member(): void
+    {
+        $member = $this->member();
+        $event  = $this->openEvent();
+        $form   = $this->openForm($event, [
+            'metadata' => ['registration_mode' => 'single'],
+        ]);
+        $this->textField($form);
+
+        $this->actingAs($member)
+            ->get($this->fillPath($event, $form))
+            ->assertOk()
+            ->assertInertia(
+                fn ($page) => $page
+                    ->where('accessStatus', 'allowed')
+            );
+    }
+
+    public function test_admin_can_fill_team_registration_form(): void
+    {
+        $admin = $this->admin();
+        $event = $this->openEvent();
+        $form  = $this->openForm($event, [
+            'metadata' => ['registration_mode' => 'team'],
+        ]);
+        $this->textField($form);
+
+        $this->actingAs($admin)
+            ->get($this->fillPath($event, $form))
+            ->assertOk()
+            ->assertInertia(
+                fn ($page) => $page
+                    ->where('accessStatus', 'allowed')
+            );
+    }
+
     public function test_fill_returns_already_submitted_when_duplicate(): void
     {
         $member = $this->member();
@@ -397,6 +472,79 @@ class FormRegistrationTest extends TestCase
         Storage::disk('public')->assertExists($answer->answers['cv']);
     }
 
+    public function test_date_picker_field_is_stored_as_scalar_string(): void
+    {
+        $member = $this->member();
+        $event  = $this->openEvent();
+        $form   = $this->openForm($event);
+
+        FormField::factory()->create([
+            'form_id'    => $form->id,
+            'input_type' => 'datePicker',
+            'name'       => 'birth_date',
+            'label'      => 'Birth date',
+            'order'      => 1,
+            'metadata'   => ['rules' => ['required' => true, 'min_date' => '2000-01-01', 'max_date' => '2010-12-31']],
+        ]);
+
+        $this->actingAs($member)
+            ->post($this->submitPath($event, $form), ['birth_date' => '2005-06-15'])
+            ->assertRedirect($this->submitSuccessRedirect($event, $member));
+
+        $answer = FormAnswer::where('form_id', $form->id)->first();
+        $this->assertSame('2005-06-15', $answer->answers['birth_date']);
+    }
+
+    public function test_validation_fails_for_date_picker_outside_min_max(): void
+    {
+        $member = $this->member();
+        $event  = $this->openEvent();
+        $form   = $this->openForm($event);
+
+        FormField::factory()->create([
+            'form_id'    => $form->id,
+            'input_type' => 'datePicker',
+            'name'       => 'birth_date',
+            'label'      => 'Birth date',
+            'order'      => 1,
+            'metadata'   => ['rules' => ['required' => true, 'min_date' => '2000-01-01', 'max_date' => '2010-12-31']],
+        ]);
+
+        $this->actingAs($member)
+            ->post($this->submitPath($event, $form), ['birth_date' => '1995-06-15'])
+            ->assertRedirect($this->fillPath($event, $form))
+            ->assertSessionHasErrors('birth_date');
+
+        $this->assertDatabaseMissing('form_answers', ['form_id' => $form->id]);
+    }
+
+    public function test_file_upload_rejects_non_matching_mime(): void
+    {
+        Storage::fake('public');
+
+        $member = $this->member();
+        $event  = $this->openEvent();
+        $form   = $this->openForm($event);
+
+        FormField::factory()->create([
+            'form_id'    => $form->id,
+            'input_type' => 'fileUpload',
+            'name'       => 'cv',
+            'label'      => 'CV',
+            'order'      => 1,
+            'metadata'   => ['rules' => ['required' => true, 'mimes' => 'pdf']],
+        ]);
+
+        $file = UploadedFile::fake()->create('cv.txt', 10, 'text/plain');
+
+        $this->actingAs($member)
+            ->post($this->submitPath($event, $form), ['cv' => $file])
+            ->assertRedirect($this->fillPath($event, $form))
+            ->assertSessionHasErrors('cv');
+
+        $this->assertDatabaseMissing('form_answers', ['form_id' => $form->id]);
+    }
+
     // =========================================================================
     // SUBMISSION CONTROLLER — blocked states
     // =========================================================================
@@ -479,6 +627,22 @@ class FormRegistrationTest extends TestCase
         $this->actingAs($member)
              ->post($this->submitPath($event, $form), ['full_name' => 'Jane'])
              ->assertRedirect($this->fillPath($event, $form));
+
+        $this->assertDatabaseMissing('form_answers', ['form_id' => $form->id]);
+    }
+
+    public function test_submit_blocked_when_registration_mode_is_team_for_member(): void
+    {
+        $member = $this->member();
+        $event  = $this->openEvent();
+        $form   = $this->openForm($event, [
+            'metadata' => ['registration_mode' => 'team'],
+        ]);
+        $this->textField($form);
+
+        $this->actingAs($member)
+            ->post($this->submitPath($event, $form), ['full_name' => 'Jane'])
+            ->assertRedirect($this->fillPath($event, $form));
 
         $this->assertDatabaseMissing('form_answers', ['form_id' => $form->id]);
     }

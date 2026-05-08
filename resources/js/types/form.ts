@@ -12,6 +12,7 @@ export type FormAccessStatus =
     | 'form_closed'
     | 'registration_not_open'
     | 'quota_full'
+    | 'unsupported_registration_mode'
     | 'already_submitted'
 
 export interface FormFillPageEvent {

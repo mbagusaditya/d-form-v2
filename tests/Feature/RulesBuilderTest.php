@@ -19,7 +19,7 @@ class RulesBuilderTest extends TestCase
                 'email'    => ['required' => 1, 'min' => 10, 'max' => 255, 'email' => 1],
                 'bio'      => ['required' => null],
                 'start_date' => ['max_date' => '2026-10-10'],
-                'image'    => ['required' => 1, 'max_size' => 2048, 'mimes' => 'jpg'],
+                'image'    => ['required' => true, 'max_size' => 2048, 'mimes' => 'jpg', 'is_file' => true],
             ];
 
         $expectedBuiltRules = [
@@ -44,6 +44,7 @@ class RulesBuilderTest extends TestCase
             ],
             'image' => [
                 'required',
+                'file',
                 'mimes:jpg',
                 'max:2048',
             ],
