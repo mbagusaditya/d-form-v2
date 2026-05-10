@@ -54,9 +54,8 @@ function onReview(payload: { action: 'accept' | 'reject'; submission: IFormSubmi
             </PageHeader>
 
             <p v-if="submissions.total > 0" class="text-sm leading-relaxed text-muted-foreground">
-                Daftar jawaban yang masuk untuk formulir ini. Setiap kartu menampilkan pengirim, status review, ringkasan isian
-                (maks. 4 field), dan aksi. Buka <span class="font-medium text-foreground">Lihat detail</span> untuk semua jawaban
-                dan lampiran; gunakan
+                Daftar pengiriman untuk formulir ini. Setiap kartu menunjukkan pengirim dan status review; buka
+                <span class="font-medium text-foreground">Lihat detail</span> untuk jawaban dan lampiran lengkap. Gunakan
                 <span class="font-medium text-foreground">Terima</span> /
                 <span class="font-medium text-foreground">Tolak</span> bila masih menunggu review.
             </p>
@@ -86,11 +85,7 @@ function onReview(payload: { action: 'accept' | 'reject'; submission: IFormSubmi
             <template v-else>
                 <FormSubmissionsCardGridView
                     :submissions="submissions.data"
-                    :answer-keys="s.answerKeys"
                     :format-date="s.formatDate"
-                    :humanize-key="s.humanizeKey"
-                    :answer-preview="s.answerPreview"
-                    :file-url="s.fileUrl"
                     :is-submission-reviewing="s.isSubmissionReviewing"
                     @open-detail="s.openDetail"
                     @review="onReview"
@@ -110,10 +105,9 @@ function onReview(payload: { action: 'accept' | 'reject'; submission: IFormSubmi
         v-model:open="s.isDetailOpen"
         :submission="s.selectedSubmission"
         :all-answer-keys="s.allAnswerKeys"
+        :fields="fields"
         :format-date="s.formatDate"
         :humanize-key="s.humanizeKey"
-        :answer-preview="s.answerPreview"
-        :file-url="s.fileUrl"
         :is-submission-reviewing="s.isSubmissionReviewing"
         @review="onReview"
     />

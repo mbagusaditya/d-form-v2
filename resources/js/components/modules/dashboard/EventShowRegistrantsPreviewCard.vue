@@ -2,10 +2,10 @@
 import { Link } from '@inertiajs/vue3'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { ArrowUpRight } from 'lucide-vue-next'
 import { formatDate } from '@/lib/dummyData'
-import { eventParticipantInitials } from '@/lib/eventShowUi'
+import UserAvatarFallback from '@/components/modules/user/UserAvatarFallback.vue'
+import { userAvatarSeed } from '@/lib/userAvatarFallback'
 
 defineProps<{
     eventId: string
@@ -43,12 +43,11 @@ defineProps<{
                     class="group flex items-center justify-between rounded-xl px-2.5 py-2 transition-colors hover:bg-muted/50"
                 >
                     <div class="flex min-w-0 items-center gap-3">
-                        <Avatar class="size-9 ring-2 ring-background">
-                            <AvatarImage :src="reg.user.avatar ?? ''" :alt="reg.user.name" />
-                            <AvatarFallback class="bg-primary/10 text-[11px] font-semibold text-primary">
-                                {{ eventParticipantInitials(reg.user.name) }}
-                            </AvatarFallback>
-                        </Avatar>
+                        <UserAvatarFallback
+                            :src="reg.user.avatar"
+                            :seed="userAvatarSeed(reg.user)"
+                            avatar-class="size-9 ring-2 ring-background"
+                        />
                         <div class="min-w-0">
                             <p class="truncate text-sm font-medium text-foreground">{{ reg.user.name }}</p>
                             <p class="truncate text-xs text-muted-foreground">{{ reg.user.email }}</p>

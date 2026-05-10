@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Input } from '@/components/ui/input'
+import { DateTimePicker } from '@/components/ui/date-picker'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import type { FormRegistrationMetadata } from '@/types/form'
@@ -84,11 +85,11 @@ function vString(v: unknown): string {
             <Label :for="`${idPrefix}-closed`" class="text-sm font-medium"
                 >Closes at <span class="text-destructive">*</span></Label
             >
-            <Input
+            <DateTimePicker
                 :id="`${idPrefix}-closed`"
                 v-model="closedAt"
-                type="datetime-local"
-                class="min-h-12 !py-3.5 px-4 text-sm leading-normal"
+                placeholder="Pilih tanggal & jam tutup"
+                class="min-h-12 text-sm"
             />
             <p v-if="fieldErrors.closed_at" class="text-destructive text-xs">{{ fieldErrors.closed_at }}</p>
         </div>

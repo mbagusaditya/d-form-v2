@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
-    registrantInitials,
     registrantRelativeTimeId,
     registrantStatusBadgeClass,
     registrantStatusLabel,
 } from '@/lib/registrantsUi'
+import UserAvatarFallback from '@/components/modules/user/UserAvatarFallback.vue'
+import { userAvatarSeed } from '@/lib/userAvatarFallback'
 
 defineProps<{
     rows: IRegistrant[]
@@ -43,12 +43,11 @@ function formatSubmittedDetail(iso: string): string {
                     >
                         <td class="px-4 py-3.5 sm:px-5">
                             <div class="flex items-center gap-3">
-                                <Avatar class="size-9 shrink-0 ring-2 ring-background">
-                                    <AvatarImage :src="reg.user.avatar ?? ''" :alt="reg.user.name" />
-                                    <AvatarFallback class="bg-primary/10 text-[11px] font-semibold text-primary">
-                                        {{ registrantInitials(reg.user.name) }}
-                                    </AvatarFallback>
-                                </Avatar>
+                                <UserAvatarFallback
+                                    :src="reg.user.avatar"
+                                    :seed="userAvatarSeed(reg.user)"
+                                    avatar-class="size-9 shrink-0 ring-2 ring-background"
+                                />
                                 <div class="min-w-0">
                                     <p class="truncate font-semibold text-foreground">{{ reg.user.name }}</p>
                                     <p class="truncate text-xs text-muted-foreground">{{ reg.user.email }}</p>

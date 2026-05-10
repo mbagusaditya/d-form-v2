@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { Button } from '@/components/ui/button'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import UserAvatarFallback from '@/components/modules/user/UserAvatarFallback.vue'
+import { userAvatarSeed } from '@/lib/userAvatarFallback'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { CheckCircle2, Clock, XCircle } from 'lucide-vue-next'
 import { formatDateTime } from '@/lib/dummyData'
-import { registrantInitials, registrantRelativeTimeId, registrantStatusBadgeClass } from '@/lib/registrantsUi'
+import { registrantRelativeTimeId, registrantStatusBadgeClass } from '@/lib/registrantsUi'
 
 const open = defineModel<boolean>('open', { required: true })
 
@@ -28,12 +29,11 @@ const emit = defineEmits<{
 
             <div v-if="registrant" class="flex flex-col gap-5 px-4 pb-4">
                 <div class="flex items-center gap-3 rounded-2xl border border-border/60 bg-muted/30 p-3.5">
-                    <Avatar class="size-12 ring-2 ring-background">
-                        <AvatarImage :src="registrant.user.avatar ?? ''" :alt="registrant.user.name" />
-                        <AvatarFallback class="bg-primary/10 text-sm font-semibold text-primary">
-                            {{ registrantInitials(registrant.user.name) }}
-                        </AvatarFallback>
-                    </Avatar>
+                    <UserAvatarFallback
+                        :src="registrant.user.avatar"
+                        :seed="userAvatarSeed(registrant.user)"
+                        avatar-class="size-12 ring-2 ring-background"
+                    />
                     <div class="min-w-0 flex-1">
                         <p class="truncate text-sm font-semibold text-foreground">{{ registrant.user.name }}</p>
                         <p class="truncate text-xs text-muted-foreground">{{ registrant.user.email }}</p>

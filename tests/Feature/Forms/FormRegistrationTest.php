@@ -922,7 +922,10 @@ class FormRegistrationTest extends TestCase
 
     public function test_team_member_can_confirm_invitation_without_append_fields(): void
     {
+        Mail::fake();
+
         $member = $this->member();
+        $leaderUser = $this->member();
         $event  = $this->openEvent();
         $form   = $this->openForm($event, [
             'metadata' => [
@@ -934,7 +937,7 @@ class FormRegistrationTest extends TestCase
 
         $leader = FormAnswer::factory()->create([
             'form_id' => $form->id,
-            'user_id' => $this->member()->id,
+            'user_id' => $leaderUser->id,
             'registration_role' => RegistrationRole::Leader,
             'member_confirmation_status' => MemberConfirmationStatus::Accepted,
         ]);
@@ -960,6 +963,85 @@ class FormRegistrationTest extends TestCase
 
         $row->refresh();
         $this->assertSame(MemberConfirmationStatus::Accepted, $row->member_confirmation_status);
+
+        Mail::assertSent(RegistrationConfirmationMail::class, 2);
+        Mail::assertSent(RegistrationConfirmationMail::class, function (RegistrationConfirmationMail $mail) use ($row) {
+            return ! $mail->isTeammateConfirmedLeaderNotice
+                && (string) $mail->submission->id === (string) $row->id;
+        });
+        Mail::assertSent(RegistrationConfirmationMail::class, function (RegistrationConfirmationMail $mail) use ($row, $leaderUser) {
+            return $mail->isTeammateConfirmedLeaderNotice
+                && $mail->greetingUser !== null
+                && (string) $mail->greetingUser->id === (string) $leaderUser->id
+                && (string) $mail->submission->id === (string) $row->id;
+        });
+    }
+
+    public function test_team_member_can_reject_invitation_and_notifies_invitee_and_leader(): void
+    {
+        Mail::fake();
+
+        $member = $this->member();
+        $leaderUser = $this->member();
+        $event  = $this->openEvent();
+        $form   = $this->openForm($event, [
+            'metadata' => [
+                'registration_mode' => 'team',
+                'team_size' => 2,
+            ],
+        ]);
+        $this->textField($form);
+
+        $leader = FormAnswer::factory()->create([
+            'form_id' => $form->id,
+            'user_id' => $leaderUser->id,
+            'registration_role' => RegistrationRole::Leader,
+            'member_confirmation_status' => MemberConfirmationStatus::Accepted,
+        ]);
+
+        $token = 'reject-token-'.uniqid();
+
+        $row = FormAnswer::factory()->create([
+            'form_id' => $form->id,
+            'user_id' => $member->id,
+            'leader_form_answer_id' => $leader->id,
+            'registration_role' => RegistrationRole::Member,
+            'member_confirmation_status' => MemberConfirmationStatus::Pending,
+            'invitation_token' => $token,
+            'invitation_expired_at' => now()->addDays(7),
+            'answers' => ['full_name' => 'Member'],
+        ]);
+
+        $this->actingAs($member)
+            ->post(route('dashboard.user.team-invitations.update', ['token' => $token], false), [
+                'invitation_decision' => 'reject',
+                'decline_reason' => 'Cannot participate due to schedule.',
+            ])
+            ->assertRedirect(route('dashboard.user.events.show', ['event_segment' => $event->slug], false));
+
+        $row->refresh();
+        $this->assertSame(MemberConfirmationStatus::Rejected, $row->member_confirmation_status);
+
+        Mail::assertSent(RegistrationRejectedMail::class, 2);
+        Mail::assertSent(RegistrationRejectedMail::class, function (RegistrationRejectedMail $mail) use ($row, $member) {
+            return $mail->forInvitationSelfDeclined
+                && ! $mail->forTeammateDeclinedLeaderNotice
+                && (string) $mail->submission->id === (string) $row->id
+                && $mail->greetingUser === null
+                && (string) $mail->submission->user_id === (string) $member->id;
+        });
+        Mail::assertSent(RegistrationRejectedMail::class, function (RegistrationRejectedMail $mail) use ($row, $leaderUser) {
+            if (! $mail->forTeammateDeclinedLeaderNotice
+                || $mail->forInvitationSelfDeclined
+                || $mail->greetingUser === null
+                || (string) $mail->greetingUser->id !== (string) $leaderUser->id
+                || (string) $mail->submission->id !== (string) $row->id) {
+                return false;
+            }
+            $rendered = $mail->render();
+
+            return str_contains($rendered, 'Cannot participate due to schedule.');
+        });
     }
 
     public function test_bundle_submission_creates_leader_member_rows_with_same_group_token(): void

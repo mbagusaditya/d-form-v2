@@ -1,6 +1,12 @@
 @extends('mail.layouts.base')
 
-@section('mail_title', __('Registration received'))
+@section('mail_title')
+    @if(!empty($isTeammateConfirmedLeaderNotice))
+        {{ __('Team registration update') }}
+    @else
+        {{ __('Registration received') }}
+    @endif
+@endsection
 
 @section('mail_card')
     @include('mail.partials.card-header', [
@@ -14,13 +20,22 @@
             <p style="margin:0 0 18px;font-size:16px;line-height:1.65;color:#374151;">
                 <strong style="color:#111827;">{{ __('Hello') }} {{ $user->name }},</strong>
             </p>
-            <p style="margin:0 0 18px;font-size:16px;line-height:1.65;color:#374151;">
-                {{ __('Thank you — we have received your registration. Our team will review it and you will receive another email once a decision has been made.') }}
-            </p>
-            @if(!$showAttendanceQr)
-                <p style="margin:0;padding:14px 16px;font-size:15px;line-height:1.6;color:#1e40af;background-color:#eff6ff;border-radius:10px;border:1px solid #bfdbfe;">
-                    {{ __('This email does not include an attendance QR code. Once an administrator has approved your registration, you will receive another email with your QR code for event check-in.') }}
+            @if(!empty($isTeammateConfirmedLeaderNotice))
+                <p style="margin:0 0 18px;font-size:16px;line-height:1.65;color:#374151;">
+                    {{ __(':name has confirmed their participation in your team registration for this event. A summary of their submission is included below.', ['name' => $teammateUser->name ?? __('Your teammate')]) }}
                 </p>
+                <p style="margin:0;padding:14px 16px;font-size:15px;line-height:1.6;color:#1e40af;background-color:#eff6ff;border-radius:10px;border:1px solid #bfdbfe;">
+                    {{ __('Administrators still need to review and approve registrations before final check-in codes are issued to participants.') }}
+                </p>
+            @else
+                <p style="margin:0 0 18px;font-size:16px;line-height:1.65;color:#374151;">
+                    {{ __('Thank you — we have received your registration. Our team will review it and you will receive another email once a decision has been made.') }}
+                </p>
+                @if(!$showAttendanceQr)
+                    <p style="margin:0;padding:14px 16px;font-size:15px;line-height:1.6;color:#1e40af;background-color:#eff6ff;border-radius:10px;border:1px solid #bfdbfe;">
+                        {{ __('This email does not include an attendance QR code. Once an administrator has approved your registration, you will receive another email with your QR code for event check-in.') }}
+                    </p>
+                @endif
             @endif
         </td>
     </tr>
@@ -46,7 +61,7 @@
     @if(count($answersSummary) > 0)
         <tr>
             <td style="padding:0 32px 24px;">
-                <p style="margin:0 0 14px;font-size:13px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#6b7280;">{{ __('Your answers') }}</p>
+                <p style="margin:0 0 14px;font-size:13px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#6b7280;">{{ !empty($isTeammateConfirmedLeaderNotice) ? __('Teammate answers') : __('Your answers') }}</p>
                 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;font-size:15px;line-height:1.55;">
                     @foreach($answersSummary as $label => $display)
                         <tr>

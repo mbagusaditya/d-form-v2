@@ -2,9 +2,10 @@
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { FileText, Eye, CheckCircle2, XCircle } from 'lucide-vue-next'
-import { formSubmissionReviewIsPending, submissionAdminAcceptBlocked, submissionReviewBadge, submissionUserInitials } from '@/lib/formSubmissionsUi'
+import { formSubmissionReviewIsPending, submissionAdminAcceptBlocked, submissionReviewBadge } from '@/lib/formSubmissionsUi'
+import { userAvatarSeed } from '@/lib/userAvatarFallback'
+import UserAvatarFallback from '@/components/modules/user/UserAvatarFallback.vue'
 
 defineProps<{
     submissions: IFormSubmission[]
@@ -62,12 +63,12 @@ defineEmits<{
                     >
                         <TableCell class="sticky left-0 z-10 border-r border-border/60 bg-card px-6 py-4">
                             <div class="flex items-center gap-3">
-                                <Avatar class="size-9 rounded-lg border border-border">
-                                    <AvatarImage :src="''" :alt="submission.user?.name ?? 'Pengirim'" />
-                                    <AvatarFallback class="rounded-lg bg-primary/10 text-xs font-semibold text-primary">
-                                        {{ submissionUserInitials(submission.user?.name ?? 'An') }}
-                                    </AvatarFallback>
-                                </Avatar>
+                                <UserAvatarFallback
+                                    :src="submission.user?.avatar ?? null"
+                                    :seed="userAvatarSeed(submission.user)"
+                                    avatar-class="size-9 rounded-lg border border-border"
+                                    fallback-round-class="rounded-lg"
+                                />
                                 <div class="min-w-0">
                                     <p class="truncate text-sm font-semibold tracking-[-0.005em] text-foreground">
                                         {{ submission.user?.name ?? 'Tanpa nama' }}

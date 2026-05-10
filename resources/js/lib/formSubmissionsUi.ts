@@ -2,18 +2,11 @@ export function formatSubmissionDate(value: string): string {
     return new Intl.DateTimeFormat('id-ID', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value))
 }
 
-export function submissionUserInitials(name: string): string {
-    return name
-        .split(' ')
-        .map((w) => w[0])
-        .join('')
-        .toUpperCase()
-        .slice(0, 2)
-}
-
 export function humanizeSubmissionKey(fieldLabelMap: Record<string, string>, value: string): string {
     return fieldLabelMap[value] || value.replace(/^field_/, '').replace(/_/g, ' ')
 }
+
+import { normalizeBannerSrc } from '@/components/modules/builder/formBanner'
 
 export function answerPreview(value: unknown): string {
     if (Array.isArray(value)) return value.map(String).join(', ')
@@ -24,7 +17,14 @@ export function answerPreview(value: unknown): string {
 }
 
 export function submissionFileUrl(value: unknown): string | null {
-    return typeof value === 'string' && value.includes('/') ? `/storage/${value}` : null
+    if (typeof value !== 'string') {
+        return null
+    }
+    const t = value.trim()
+    if (!t) {
+        return null
+    }
+    return normalizeBannerSrc(t)
 }
 
 export function submissionPaginationLabel(value: string): string {

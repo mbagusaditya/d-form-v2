@@ -9,7 +9,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import UserAvatarFallback from '@/components/modules/user/UserAvatarFallback.vue'
+import { userAvatarSeed } from '@/lib/userAvatarFallback'
 import { Separator } from '@/components/ui/separator'
 import useAuth from '@/utils/composables/useAuth'
 import { User as UserIcon, Shield, CalendarDays, Save, Lock } from 'lucide-vue-next'
@@ -21,10 +22,6 @@ const page = usePage()
 const user = useAuth(page.props)
 
 const hasLocalPassword = computed<boolean>(() => user.value?.has_local_password !== false)
-
-const initials = computed<string>(() =>
-    user.value?.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2) ?? '??',
-)
 
 const memberSince = computed<string>(() => {
     if (!user.value?.created_at) return 'Unknown'
@@ -98,10 +95,11 @@ function updatePasswordSubmit(): void {
         <div class="grid gap-6 lg:grid-cols-3">
             <Card class="rounded-2xl border-border/70 shadow-sm ring-1 ring-black/[0.03] dark:ring-white/[0.06]">
                 <CardContent class="flex flex-col items-center gap-4 p-6">
-                    <Avatar class="size-24">
-                        <AvatarImage :src="user?.avatar ?? ''" :alt="user?.name ?? ''" />
-                        <AvatarFallback class="bg-primary/10 text-xl font-semibold text-primary">{{ initials }}</AvatarFallback>
-                    </Avatar>
+                    <UserAvatarFallback
+                        :src="user?.avatar ?? null"
+                        :seed="userAvatarSeed(user)"
+                        avatar-class="size-24"
+                    />
                     <div class="text-center">
                         <h2 class="text-lg font-semibold">{{ user?.name ?? 'Guest' }}</h2>
                         <p class="text-sm text-muted-foreground">{{ user?.email ?? '' }}</p>

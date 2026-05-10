@@ -27,7 +27,7 @@ class FormFillController extends Controller
         $form->load(['formFields' => fn ($q) => $q->orderBy('order')]);
 
         $fields = $form->formFields
-            ->map(fn (FormField $f) => $this->fieldToInertia($f))
+            ->map(fn (FormField $f) => FormFieldTypeMapping::fieldToInertia($f))
             ->values()
             ->all();
 
@@ -69,28 +69,5 @@ class FormFillController extends Controller
             'memberSlots'         => $memberSlots,
             'pendingInvitationUrl' => $pendingInvitationUrl,
         ]);
-    }
-
-    private function fieldToInertia(FormField $f): array
-    {
-        $meta = $f->metadata;
-        if ($meta instanceof \Illuminate\Support\Collection) {
-            $meta = $meta->all();
-        } elseif (is_object($meta) && method_exists($meta, 'toArray')) {
-            $meta = $meta->toArray();
-        } else {
-            $meta = (array) $meta;
-        }
-
-        return [
-            'id'          => $f->id,
-            'type'        => FormFieldTypeMapping::toApiType($f->input_type),
-            'label'       => $f->label,
-            'description' => $f->description,
-            'name'        => $f->name,
-            'order'       => $f->order,
-            'metadata'    => $meta,
-            'is_append'   => (bool) $f->is_append,
-        ];
     }
 }

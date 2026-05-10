@@ -21,7 +21,7 @@ const props = withDefaults(
     }>(),
     {
         allowCustom: true,
-        placeholder: 'Ketik untuk mencari, pilih dari daftar, atau Enter…',
+        placeholder: 'Cari atau ketik lalu Enter',
     },
 );
 
@@ -32,9 +32,11 @@ const maxTagsEff = computed(() => props.maxTags ?? Number.POSITIVE_INFINITY);
 
 <template>
     <div class="flex flex-col gap-2">
-        <div class="space-y-0.5">
+        <div class="space-y-1">
             <Label :for="id" class="text-sm font-medium">{{ label }}</Label>
-            <p v-if="description" class="text-muted-foreground text-xs leading-relaxed">{{ description }}</p>
+            <p v-if="description" class="text-muted-foreground text-xs leading-snug">
+                {{ description }}
+            </p>
         </div>
 
         <ComboboxTagInput

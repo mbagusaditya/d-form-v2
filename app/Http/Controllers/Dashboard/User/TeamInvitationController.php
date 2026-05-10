@@ -5,6 +5,9 @@ namespace App\Http\Controllers\Dashboard\User;
 use App\Enums\MemberConfirmationStatus;
 use App\Enums\RegistrationRole;
 use App\Http\Controllers\Controller;
+use App\Jobs\SendInviteeInvitationDeclinedNoticeJob;
+use App\Jobs\SendRegistrationConfirmationJob;
+use App\Jobs\SendTeamInvitationLeaderNoticeJob;
 use App\Models\FormAnswer;
 use App\Models\FormField;
 use App\Services\Form\RulesBuilder;
@@ -94,14 +97,29 @@ class TeamInvitationController extends Controller
             return redirect()->route('dashboard.user.team-invitations.show', ['token' => $token]);
         }
 
+        $request->merge([
+            'decline_reason' => trim((string) $request->input('decline_reason', '')),
+        ]);
+
         $data = $request->validate([
             'invitation_decision' => ['required', Rule::in(['accept', 'reject'])],
+            'decline_reason' => [
+                'nullable',
+                Rule::requiredIf(fn () => $request->input('invitation_decision') === 'reject'),
+                'string',
+                'max:2000',
+            ],
         ]);
 
         if ($data['invitation_decision'] === 'reject') {
             $answer->forceFill([
                 'member_confirmation_status' => MemberConfirmationStatus::Rejected,
             ])->save();
+
+            $answerId = (string) $answer->id;
+            $declineReasonForEmail = $data['decline_reason'];
+            SendInviteeInvitationDeclinedNoticeJob::dispatch($answerId)->afterCommit();
+            SendTeamInvitationLeaderNoticeJob::dispatch($answerId, 'rejected', $declineReasonForEmail)->afterCommit();
 
             Inertia::flash('toast', [
                 'type' => 'success',
@@ -119,6 +137,10 @@ class TeamInvitationController extends Controller
                 'member_confirmation_status' => MemberConfirmationStatus::Accepted,
                 'member_confirmed_at' => now(),
             ])->save();
+
+            $answerId = (string) $answer->id;
+            SendRegistrationConfirmationJob::dispatch($answerId)->afterCommit();
+            SendTeamInvitationLeaderNoticeJob::dispatch($answerId, 'accepted')->afterCommit();
 
             Inertia::flash('toast', [
                 'type' => 'success',
@@ -173,6 +195,10 @@ class TeamInvitationController extends Controller
             'member_confirmation_status' => MemberConfirmationStatus::Accepted,
             'member_confirmed_at' => now(),
         ])->save();
+
+        $answerId = (string) $answer->id;
+        SendRegistrationConfirmationJob::dispatch($answerId)->afterCommit();
+        SendTeamInvitationLeaderNoticeJob::dispatch($answerId, 'accepted')->afterCommit();
 
         Inertia::flash('toast', [
             'type' => 'success',

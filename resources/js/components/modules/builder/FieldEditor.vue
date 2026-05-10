@@ -325,8 +325,8 @@ const hasAdvancedFlags = computed(
                     <p class="text-xs text-muted-foreground">Team flow: invited members may change this field when confirming.</p>
                 </div>
                 <Switch
-                    :checked="!!field.is_append"
-                    @update:checked="(v: boolean) => update('is_append', v)"
+                    :model-value="!!field.is_append"
+                    @update:model-value="(v) => update('is_append', Boolean(v))"
                 />
             </div>
             <div class="flex items-center justify-between gap-4 rounded-xl border border-border/60 bg-muted/20 px-4 py-3">
@@ -335,8 +335,8 @@ const hasAdvancedFlags = computed(
                     <p class="text-xs text-muted-foreground">Repeat for each additional participant in bundle registration.</p>
                 </div>
                 <Switch
-                    :checked="field.metadata?.duplicatable === true"
-                    @update:checked="(v: boolean) => updateMeta('duplicatable', v)"
+                    :model-value="field.metadata?.duplicatable === true"
+                    @update:model-value="(v) => updateMeta('duplicatable', Boolean(v))"
                 />
             </div>
         </div>
@@ -350,8 +350,8 @@ const hasAdvancedFlags = computed(
                     <p class="text-xs text-muted-foreground">Pengguna harus mengisi field ini</p>
                 </div>
                 <Switch
-                    :checked="!!field.required"
-                    @update:checked="(v: boolean) => update('required', v)"
+                    :model-value="!!field.required"
+                    @update:model-value="(v) => update('required', Boolean(v))"
                 />
             </div>
         </div>

@@ -15,7 +15,7 @@ defineProps<{
 </script>
 
 <template>
-    <Card class="mt-6">
+    <Card>
         <CardContent class="flex flex-col items-center gap-3 py-12 text-center">
             <CheckCircle2 v-if="success" class="size-10 text-success" />
             <AlertCircle v-else class="size-10 text-warning" />

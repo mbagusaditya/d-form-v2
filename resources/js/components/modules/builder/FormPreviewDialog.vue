@@ -7,6 +7,7 @@ import PageHeader from '@/components/modules/dashboard/PageHeader.vue'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { DatePicker } from '@/components/ui/date-picker'
 import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -315,12 +316,12 @@ function ratingStars(field: FormPreviewField): number[] {
                                                 </label>
                                             </div>
 
-                                            <Input
+                                            <DatePicker
                                                 v-else-if="field.type === 'date'"
-                                                type="date"
+                                                model-value=""
                                                 disabled
-                                                class="pointer-events-none text-sm opacity-90"
-                                                tabindex="-1"
+                                                placeholder="Tanggal"
+                                                class="text-sm opacity-90"
                                             />
 
                                             <div v-else-if="field.type === 'rating'" class="flex flex-col gap-3">

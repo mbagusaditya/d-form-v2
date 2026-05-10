@@ -4,11 +4,13 @@ import { Link } from '@inertiajs/vue3'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { DatePicker } from '@/components/ui/date-picker'
 import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import type { UnwrapNestedRefs } from 'vue'
+import { ref, watch, type UnwrapNestedRefs } from 'vue'
 import { Send, Star, ImagePlus, Upload, X } from 'lucide-vue-next'
+import { Dialog, DialogContent } from '@/components/ui/dialog'
 import type { FormFillPageContext } from '@/utils/composables/useFormFillPage'
 
 defineProps<{
@@ -36,6 +38,35 @@ function slotStorageKey(
     slot: { slotIndex: number | null },
 ): string {
     return ctx.answerKeyForSlot(field, slot.slotIndex)
+}
+
+const uploadLightboxOpen = ref(false)
+const uploadLightboxSrc = ref<string | null>(null)
+const uploadLightboxTitle = ref('')
+
+function openUploadLightbox(src: string | undefined, title: string) {
+    if (!src) return
+    uploadLightboxSrc.value = src
+    uploadLightboxTitle.value = title
+    uploadLightboxOpen.value = true
+}
+
+watch(uploadLightboxOpen, (open) => {
+    if (!open) {
+        uploadLightboxSrc.value = null
+        uploadLightboxTitle.value = ''
+    }
+})
+
+function imageUploadFillReady(
+    ctx: UnwrapNestedRefs<FormFillPageContext>,
+    field: IFormField,
+    slot: { slotIndex: number | null },
+): boolean {
+    const key = slotStorageKey(ctx, field, slot)
+    return (
+        ctx.builderType(field) === 'image_upload' && !!ctx.answerForm[key] && !!ctx.filePreviewUrls[key]
+    )
 }
 </script>
 
@@ -164,11 +195,11 @@ function slotStorageKey(
                             rows="4"
                         />
 
-                        <Input
+                        <DatePicker
                             v-else-if="ctx.builderType(field) === 'date' || field.type === 'datePicker'"
                             :id="slotStorageKey(ctx, field, slot)"
-                            type="date"
                             :model-value="textAnswer(ctx, slotStorageKey(ctx, field, slot))"
+                            class="min-h-11"
                             @update:model-value="setTextAnswer(ctx, slotStorageKey(ctx, field, slot), $event)"
                         />
 
@@ -254,9 +285,60 @@ function slotStorageKey(
 
                         <div
                             v-else-if="['file_upload', 'image_upload', 'fileUpload'].includes(ctx.builderType(field))"
-                            class="relative rounded-xl border border-dashed border-border bg-muted/20 p-6 text-center transition-colors hover:border-primary/30 hover:bg-muted/30"
+                            class="relative overflow-hidden rounded-xl border border-dashed border-border bg-muted/20 transition-colors hover:border-primary/30"
+                            :class="imageUploadFillReady(ctx, field, slot) ? 'p-0' : 'p-6 text-center hover:bg-muted/30'"
                         >
-                            <div class="flex flex-col items-center gap-2">
+                            <!-- Full-bleed preview: image fills the dashed card -->
+                            <div
+                                v-if="imageUploadFillReady(ctx, field, slot)"
+                                class="relative aspect-[4/3] w-full bg-muted/30"
+                            >
+                                <button
+                                    type="button"
+                                    class="absolute inset-0 z-10 flex w-full focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                                    @click="
+                                        openUploadLightbox(
+                                            ctx.filePreviewUrls[slotStorageKey(ctx, field, slot)],
+                                            (ctx.answerForm[slotStorageKey(ctx, field, slot)] as File).name,
+                                        )
+                                    "
+                                >
+                                    <img
+                                        :src="ctx.filePreviewUrls[slotStorageKey(ctx, field, slot)]"
+                                        :alt="(ctx.answerForm[slotStorageKey(ctx, field, slot)] as File).name"
+                                        class="h-full w-full object-cover"
+                                    />
+                                    <span class="sr-only">View full size</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    class="absolute right-2 top-2 z-20 grid size-9 place-items-center rounded-full border border-border/80 bg-background/95 text-destructive shadow-md backdrop-blur-sm transition-transform hover:scale-105"
+                                    :aria-label="`Remove ${(ctx.answerForm[slotStorageKey(ctx, field, slot)] as File).name}`"
+                                    @click.stop="ctx.clearFileUpload(slotStorageKey(ctx, field, slot))"
+                                >
+                                    <X class="size-4" />
+                                </button>
+                                <div
+                                    class="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex flex-col items-center gap-1 bg-gradient-to-t from-black/60 via-black/25 to-transparent px-3 pb-3 pt-14 text-center"
+                                >
+                                    <label
+                                        class="pointer-events-auto cursor-pointer rounded-full border border-white/20 bg-background/95 px-3 py-1.5 text-xs font-medium text-foreground shadow-sm backdrop-blur-sm transition-colors hover:bg-background"
+                                    >
+                                        Choose another file
+                                        <input
+                                            type="file"
+                                            :accept="ctx.acceptValue(field)"
+                                            class="sr-only"
+                                            @change="ctx.onFileChange(slotStorageKey(ctx, field, slot), $event)"
+                                            @click.stop
+                                        />
+                                    </label>
+                                    <p class="text-[10px] font-medium text-white drop-shadow">Click image to view full size</p>
+                                </div>
+                            </div>
+
+                            <!-- Empty upload dropzone -->
+                            <div v-else class="flex flex-col items-center gap-2">
                                 <div class="grid size-12 place-items-center rounded-full border border-border bg-card shadow-xs">
                                     <component
                                         :is="ctx.builderType(field) === 'image_upload' ? ImagePlus : Upload"
@@ -274,8 +356,13 @@ function slotStorageKey(
                                     @change="ctx.onFileChange(slotStorageKey(ctx, field, slot), $event)"
                                 />
                             </div>
+
+                            <!-- Generic file name chip (non-image or no preview yet) -->
                             <div
-                                v-if="ctx.answerForm[slotStorageKey(ctx, field, slot)]"
+                                v-if="
+                                    ctx.answerForm[slotStorageKey(ctx, field, slot)] &&
+                                    !imageUploadFillReady(ctx, field, slot)
+                                "
                                 class="relative z-10 mt-4 flex items-center justify-center gap-2 rounded-xl border border-border bg-card p-3 shadow-xs"
                             >
                                 <span class="max-w-[200px] truncate text-xs font-medium text-foreground">{{
@@ -284,7 +371,7 @@ function slotStorageKey(
                                 <button
                                     type="button"
                                     class="text-destructive transition-transform hover:scale-110"
-                                    @click="ctx.answerForm[slotStorageKey(ctx, field, slot)] = null"
+                                    @click="ctx.clearFileUpload(slotStorageKey(ctx, field, slot))"
                                 >
                                     <X class="size-4" />
                                 </button>
@@ -311,5 +398,24 @@ function slotStorageKey(
                 Submit registration
             </Button>
         </div>
+
+        <Dialog v-model:open="uploadLightboxOpen">
+            <DialogContent
+                :show-close-button="false"
+                overlay-class="bg-black/45 backdrop-blur-sm"
+                class="w-auto max-w-[min(calc(100vw-2rem),96rem)] gap-0 rounded-none border-0 bg-transparent p-0 shadow-none outline-none sm:max-w-[min(calc(100vw-2rem),96rem)]"
+            >
+                <div v-if="uploadLightboxSrc" class="flex flex-col items-center gap-3 px-1 pb-1 pt-1">
+                    <img
+                        :src="uploadLightboxSrc"
+                        :alt="uploadLightboxTitle"
+                        class="max-h-[min(85vh,calc(100dvh-4rem))] w-auto max-w-[min(calc(100vw-3rem),96rem)] object-contain"
+                    />
+                    <p class="max-w-[min(calc(100vw-3rem),96rem)] truncate text-center text-sm font-medium text-white">
+                        {{ uploadLightboxTitle }}
+                    </p>
+                </div>
+            </DialogContent>
+        </Dialog>
     </form>
 </template>

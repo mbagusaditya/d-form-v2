@@ -4,9 +4,18 @@ namespace App\Services\Registration;
 
 use App\Models\FormAnswer;
 use App\Models\FormField;
+use Illuminate\Support\Facades\Storage;
 
 final class RegistrationAnswersSummarizer
 {
+    /**
+     * @return array<string, string>
+     */
+    public function summarizeForPortal(FormAnswer $submission): array
+    {
+        return $this->summarize($submission);
+    }
+
     /**
      * @return array<string, string>
      */
@@ -17,7 +26,7 @@ final class RegistrationAnswersSummarizer
         $fields = FormField::query()
             ->where('form_id', $submission->form_id)
             ->orderBy('order')
-            ->get(['name', 'label', 'input_type']);
+            ->get(['name', 'label', 'input_type', 'metadata']);
 
         $lines = [];
         foreach ($fields as $field) {
@@ -27,9 +36,7 @@ final class RegistrationAnswersSummarizer
             $value = $answers[$field->name];
 
             if ($field->input_type === 'fileUpload') {
-                $lines[$field->label] = is_string($value) && $value !== ''
-                    ? __('File uploaded')
-                    : '—';
+                $lines[$field->label] = $this->fileFieldSummary($value);
 
                 continue;
             }
@@ -48,5 +55,18 @@ final class RegistrationAnswersSummarizer
         }
 
         return $lines;
+    }
+
+    private function fileFieldSummary(mixed $value): string
+    {
+        if (! is_string($value) || $value === '') {
+            return '—';
+        }
+
+        try {
+            return Storage::disk('public')->url($value);
+        } catch (\Throwable) {
+            return __('File uploaded');
+        }
     }
 }

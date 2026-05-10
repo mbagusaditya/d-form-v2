@@ -4,8 +4,10 @@ namespace App\Http\Controllers\Dashboard\Events\Forms;
 
 use App\Http\Controllers\Controller;
 use App\Models\Event;
+use App\Models\FormField;
 use App\Models\Form;
 use App\Models\FormAnswer;
+use App\Support\FormFieldTypeMapping;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -66,7 +68,10 @@ class FormSubmissionsController extends Controller
             ],
             'fields'      => $form->formFields()
                 ->orderBy('order')
-                ->get(['id', 'name', 'label', 'input_type']),
+                ->get()
+                ->map(fn (FormField $f) => FormFieldTypeMapping::fieldToInertia($f))
+                ->values()
+                ->all(),
             'submissions' => $submissions,
         ]);
     }

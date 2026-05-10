@@ -100,7 +100,7 @@ class UserEventRegistrationPortalTest extends TestCase
             ->assertNotFound();
     }
 
-    public function test_registration_answer_must_be_for_primary_form_by_title(): void
+    public function test_registration_resolves_when_answer_belongs_to_any_event_form(): void
     {
         $member = $this->member();
         $event = $this->publishedEvent();
@@ -121,7 +121,14 @@ class UserEventRegistrationPortalTest extends TestCase
         ]);
 
         $this->actingAs($member)->get($this->registrationUrl($event))
-            ->assertNotFound();
+            ->assertOk()
+            ->assertInertia(
+                fn ($page) => $page
+                    ->component('Dashboard/User/EventRegistration')
+                    ->where('form.id', $secondaryForm->id)
+                    ->where('form.title', 'Zeta other form')
+                    ->where('registration.registration_role', null)
+            );
     }
 
     public function test_slug_and_uuid_segments_resolve_for_registrant(): void
@@ -143,6 +150,8 @@ class UserEventRegistrationPortalTest extends TestCase
                     fn ($page) => $page
                     ->component('Dashboard/User/EventRegistration')
                     ->where('event.slug', $event->slug)
+                    ->where('form.id', $form->id)
+                    ->where('form.title', $form->title)
                     ->where('registration.review_status', 'pending')
                     ->where('registration.registration_code', null)
                     ->where('registration.qr_base64', fn ($v) => $v === null)

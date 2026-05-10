@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, nextTick } from 'vue'
+import { ref, computed, watch, nextTick, useId } from 'vue'
 import { X, ChevronDown, Plus } from 'lucide-vue-next'
 
 export interface TagSuggestion {
@@ -7,23 +7,25 @@ export interface TagSuggestion {
     label: string
 }
 
-const props = withDefaults(defineProps<{
-    modelValue?: string
-    suggestions?: TagSuggestion[]
-    maxTags?: number
-    /** If false, only values from suggestions can be chosen (matches enum-only APIs). */
-    allowCustom?: boolean
-    placeholder?: string
-    disabled?: boolean
-    id?: string
-}>(), {
-    modelValue: '',
-    suggestions: () => [],
-    maxTags: Infinity,
-    allowCustom: true,
-    placeholder: 'Type or select…',
-    disabled: false,
-})
+const props = withDefaults(
+    defineProps<{
+        modelValue?: string
+        suggestions?: TagSuggestion[]
+        maxTags?: number
+        allowCustom?: boolean
+        placeholder?: string
+        disabled?: boolean
+        id?: string
+    }>(),
+    {
+        modelValue: '',
+        suggestions: () => [],
+        maxTags: Infinity,
+        allowCustom: true,
+        placeholder: 'Cari atau ketik…',
+        disabled: false,
+    },
+)
 
 const emit = defineEmits<{
     'update:modelValue': [value: string]
@@ -34,6 +36,7 @@ const open = ref(false)
 const inputRef = ref<HTMLInputElement | null>(null)
 const containerRef = ref<HTMLDivElement | null>(null)
 const highlightIndex = ref(-1)
+const listboxId = useId()
 
 const tags = computed<string[]>(() => {
     const raw = props.modelValue != null && props.modelValue !== '' ? String(props.modelValue).trim() : ''
@@ -47,9 +50,10 @@ const canAddMore = computed(() => tags.value.length < props.maxTags)
 const filteredSuggestions = computed(() => {
     const q = query.value.toLowerCase().trim()
     const selected = new Set(tags.value)
-    return props.suggestions.filter(s =>
-        !selected.has(s.value) &&
-        (q === '' || s.label.toLowerCase().includes(q) || s.value.toLowerCase().includes(q))
+    return props.suggestions.filter(
+        s =>
+            !selected.has(s.value) &&
+            (q === '' || s.label.toLowerCase().includes(q) || s.value.toLowerCase().includes(q)),
     )
 })
 
@@ -57,14 +61,27 @@ const showCustomOption = computed(() => {
     if (!props.allowCustom) return false
     const q = query.value.trim()
     if (!q) return false
-    const existing = props.suggestions.some(s =>
-        s.value.toLowerCase() === q.toLowerCase() || s.label.toLowerCase() === q.toLowerCase()
+    const existing = props.suggestions.some(
+        s => s.value.toLowerCase() === q.toLowerCase() || s.label.toLowerCase() === q.toLowerCase(),
     )
     const alreadyTagged = tags.value.some(t => t.toLowerCase() === q.toLowerCase())
     return !existing && !alreadyTagged
 })
 
 const totalOptions = computed(() => filteredSuggestions.value.length + (showCustomOption.value ? 1 : 0))
+
+const panelHint = computed(() => {
+    if (totalOptions.value > 0) return null
+    const q = query.value.trim()
+    if (props.suggestions.length === 0) {
+        if (!props.allowCustom) return 'Tidak ada opsi.'
+        return q ? null : 'Ketik nilai lalu Enter.'
+    }
+    if (q && !props.allowCustom) return 'Tidak ada yang cocok.'
+    if (q && props.allowCustom) return null
+    if (!props.allowCustom) return 'Semua sudah dipilih.'
+    return 'Semua dari daftar dipilih. Ketik untuk menambah.'
+})
 
 function syncTags(newTags: string[]) {
     if (newTags.length === 0) {
@@ -82,9 +99,7 @@ function suggestionMatchingQuery(): TagSuggestion | undefined {
     const q = query.value.trim()
     if (!q) return undefined
     const lower = q.toLowerCase()
-    return props.suggestions.find(
-        s => s.value.toLowerCase() === lower || s.label.toLowerCase() === lower,
-    )
+    return props.suggestions.find(s => s.value.toLowerCase() === lower || s.label.toLowerCase() === lower)
 }
 
 function addTag(value: string) {
@@ -117,6 +132,25 @@ function labelFor(value: string): string {
     return match?.label ?? value
 }
 
+function toggleDropdown() {
+    if (props.disabled) return
+    open.value = !open.value
+    if (open.value) {
+        nextTick(() => inputRef.value?.focus())
+    } else {
+        highlightIndex.value = -1
+    }
+}
+
+function selectHighlighted() {
+    const idx = highlightIndex.value
+    if (idx < filteredSuggestions.value.length) {
+        addTag(filteredSuggestions.value[idx].value)
+    } else if (showCustomOption.value) {
+        addTag(query.value)
+    }
+}
+
 function handleKeydown(e: KeyboardEvent) {
     if (e.key === 'Backspace') {
         if (query.value === '' && tags.value.length > 0) {
@@ -144,6 +178,7 @@ function handleKeydown(e: KeyboardEvent) {
     if (e.key === 'ArrowDown') {
         e.preventDefault()
         open.value = true
+        if (totalOptions.value === 0) return
         highlightIndex.value = Math.min(highlightIndex.value + 1, totalOptions.value - 1)
         return
     }
@@ -157,15 +192,6 @@ function handleKeydown(e: KeyboardEvent) {
     if (e.key === 'Escape') {
         open.value = false
         highlightIndex.value = -1
-    }
-}
-
-function selectHighlighted() {
-    const idx = highlightIndex.value
-    if (idx < filteredSuggestions.value.length) {
-        addTag(filteredSuggestions.value[idx].value)
-    } else if (showCustomOption.value) {
-        addTag(query.value)
     }
 }
 
@@ -185,7 +211,7 @@ watch(query, () => {
     if (query.value && !open.value) open.value = true
 })
 
-watch(open, (val) => {
+watch(open, val => {
     if (val) {
         document.addEventListener('pointerdown', handleClickOutside)
     } else {
@@ -198,92 +224,121 @@ watch(open, (val) => {
     <div ref="containerRef" class="relative">
         <div
             :class="[
-                'flex min-h-10 flex-wrap items-center gap-1.5 rounded-xl border bg-card px-2.5 py-1.5 text-sm font-medium shadow-xs transition-[border-color,box-shadow] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)]',
-                open ? 'border-ring ring-3 ring-ring/15' : 'border-input hover:border-primary/30',
-                disabled ? 'pointer-events-none opacity-50' : 'cursor-text',
+                'flex min-h-9 items-stretch overflow-hidden rounded-lg border bg-background text-sm transition-colors',
+                open ? 'border-ring ring-2 ring-ring/20' : 'border-input hover:border-muted-foreground/25',
+                disabled ? 'pointer-events-none opacity-50' : '',
             ]"
-            @click="inputRef?.focus()"
         >
-            <span
-                v-for="(tag, idx) in tags"
-                :key="tag"
-                class="inline-flex items-center gap-1 rounded-md border border-primary/20 bg-primary/10 px-1.5 py-0.5 text-xs font-semibold text-primary"
+            <div
+                class="flex min-w-0 flex-1 flex-wrap items-center gap-1 px-2 py-1.5"
+                @click="inputRef?.focus()"
             >
-                {{ labelFor(tag) }}
-                <button
-                    type="button"
-                    tabindex="-1"
-                    class="inline-flex size-3.5 items-center justify-center rounded text-primary/70 transition-colors hover:bg-primary/15 hover:text-primary focus:outline-none"
-                    @click.stop="removeTag(idx)"
+                <span
+                    v-for="(tag, idx) in tags"
+                    :key="`${tag}-${idx}`"
+                    class="inline-flex max-w-full items-center gap-0.5 rounded-md bg-muted px-1.5 py-0.5 text-xs text-foreground"
                 >
-                    <X class="size-2.5" :stroke-width="2.5" />
-                </button>
-            </span>
+                    <span class="truncate">{{ labelFor(tag) }}</span>
+                    <button
+                        type="button"
+                        tabindex="-1"
+                        :aria-label="`Hapus ${labelFor(tag)}`"
+                        class="inline-flex size-4 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-background hover:text-foreground"
+                        @click.stop="removeTag(idx)"
+                    >
+                        <X class="size-3" :stroke-width="2" />
+                    </button>
+                </span>
 
-            <input
-                v-if="canAddMore"
-                :id="id"
-                ref="inputRef"
-                v-model="query"
-                type="text"
-                :placeholder="tags.length === 0 ? placeholder : ''"
-                :disabled="disabled"
-                autocomplete="off"
-                class="min-w-[60px] flex-1 bg-transparent text-xs outline-none placeholder:text-muted-foreground"
-                @focus="handleInputFocus"
-                @keydown="handleKeydown"
-            />
+                <input
+                    v-if="canAddMore"
+                    :id="id"
+                    ref="inputRef"
+                    v-model="query"
+                    type="text"
+                    role="combobox"
+                    :aria-expanded="open"
+                    :aria-controls="listboxId"
+                    :aria-autocomplete="suggestions.length ? 'list' : 'none'"
+                    :placeholder="tags.length === 0 ? placeholder : ''"
+                    :disabled="disabled"
+                    autocomplete="off"
+                    class="min-w-[5.5rem] flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+                    @focus="handleInputFocus"
+                    @keydown="handleKeydown"
+                />
+            </div>
 
-            <ChevronDown
+            <button
                 v-if="suggestions.length > 0"
-                class="ml-auto size-3.5 shrink-0 text-muted-foreground/60"
-            />
+                type="button"
+                class="flex w-9 shrink-0 items-center justify-center text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                :aria-expanded="open"
+                :aria-controls="listboxId"
+                aria-haspopup="listbox"
+                title="Daftar"
+                @click.stop="toggleDropdown"
+            >
+                <ChevronDown
+                    class="size-4 transition-transform duration-200"
+                    :class="open ? 'rotate-180' : ''"
+                    aria-hidden="true"
+                />
+            </button>
         </div>
 
         <Transition
-            enter-active-class="transition duration-100 ease-out"
-            enter-from-class="scale-95 opacity-0"
-            enter-to-class="scale-100 opacity-100"
-            leave-active-class="transition duration-75 ease-in"
-            leave-from-class="scale-100 opacity-100"
-            leave-to-class="scale-95 opacity-0"
+            enter-active-class="transition duration-150 ease-out"
+            enter-from-class="translate-y-px opacity-0"
+            enter-to-class="translate-y-0 opacity-100"
+            leave-active-class="transition duration-100 ease-in"
+            leave-from-class="translate-y-0 opacity-100"
+            leave-to-class="translate-y-px opacity-0"
         >
             <div
-                v-if="open && totalOptions > 0"
-                class="absolute left-0 top-full z-50 mt-2 w-full overflow-hidden rounded-xl border border-border bg-popover text-popover-foreground shadow-sm"
+                v-if="open"
+                :id="listboxId"
+                role="listbox"
+                class="absolute left-0 top-full z-50 mt-1 w-full overflow-hidden rounded-lg border bg-popover py-1 shadow-md"
             >
-                <div class="max-h-48 overflow-y-auto p-1">
-                    <button
-                        v-for="(s, idx) in filteredSuggestions"
-                        :key="s.value"
-                        type="button"
-                        :class="[
-                            'flex w-full items-center rounded-lg px-2 py-1.5 text-xs font-medium outline-none transition-colors',
-                            idx === highlightIndex
-                                ? 'bg-primary/10 text-foreground'
-                                : 'text-foreground/80 hover:bg-primary/8 hover:text-foreground',
-                        ]"
-                        @pointerdown.prevent="addTag(s.value)"
-                        @pointerenter="highlightIndex = idx"
-                    >
-                        {{ s.label }}
-                    </button>
+                <div class="max-h-48 overflow-y-auto">
+                    <template v-if="totalOptions > 0">
+                        <button
+                            v-for="(s, idx) in filteredSuggestions"
+                            :key="s.value"
+                            type="button"
+                            role="option"
+                            :class="[
+                                'flex w-full px-3 py-2 text-left text-sm outline-none',
+                                idx === highlightIndex ? 'bg-accent text-accent-foreground' : 'hover:bg-muted/70',
+                            ]"
+                            @pointerdown.prevent="addTag(s.value)"
+                            @pointerenter="highlightIndex = idx"
+                        >
+                            {{ s.label }}
+                        </button>
 
-                    <button
-                        v-if="showCustomOption"
-                        type="button"
-                        :class="[
-                            'flex w-full items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium outline-none transition-colors',
-                            filteredSuggestions.length === highlightIndex
-                                ? 'bg-primary/10 text-foreground'
-                                : 'text-foreground/80 hover:bg-primary/8 hover:text-foreground',
-                        ]"
-                        @pointerdown.prevent="addTag(query)"
-                        @pointerenter="highlightIndex = filteredSuggestions.length"
-                    >
-                        <Plus class="size-3" :stroke-width="2.5" />
-                        <span>Add "<span class="font-semibold">{{ query.trim() }}</span>"</span>
-                    </button>
+                        <button
+                            v-if="showCustomOption"
+                            type="button"
+                            role="option"
+                            :class="[
+                                'flex w-full items-center gap-2 px-3 py-2 text-left text-sm outline-none',
+                                filteredSuggestions.length === highlightIndex
+                                    ? 'bg-accent text-accent-foreground'
+                                    : 'hover:bg-muted/70',
+                            ]"
+                            @pointerdown.prevent="addTag(query)"
+                            @pointerenter="highlightIndex = filteredSuggestions.length"
+                        >
+                            <Plus class="size-3.5 shrink-0 opacity-70" :stroke-width="2" aria-hidden="true" />
+                            <span>Tambah "{{ query.trim() }}"</span>
+                        </button>
+                    </template>
+
+                    <p v-else class="px-3 py-3 text-center text-xs text-muted-foreground">
+                        {{ panelHint }}
+                    </p>
                 </div>
             </div>
         </Transition>

@@ -55,7 +55,6 @@ function onSave(): void {
 
     isSaving.value = true
     createForm.post(`/admin/dashboard/events/${props.event.id}/forms`, {
-        forceFormData: true,
         onSuccess: () => toast.success('Form created successfully!'),
         onError: (err) => {
             const first = Object.values(err)[0]

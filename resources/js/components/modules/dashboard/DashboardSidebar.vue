@@ -17,7 +17,8 @@ import {
     SidebarSeparator,
     useSidebar,
 } from '@/components/ui/sidebar';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import UserAvatarFallback from '@/components/modules/user/UserAvatarFallback.vue';
+import { userAvatarSeed } from '@/lib/userAvatarFallback';
 import {
     LayoutDashboard,
     CalendarDays,
@@ -89,15 +90,6 @@ function isActive(href: string): boolean {
         return p === '/user/dashboard' || p.startsWith('/user/dashboard/');
     }
     return p.startsWith(href);
-}
-
-function getInitials(name: string): string {
-    return name
-        .split(' ')
-        .map((w) => w[0])
-        .join('')
-        .toUpperCase()
-        .slice(0, 2);
 }
 
 function handleLogout() {
@@ -238,14 +230,12 @@ watch(currentPath, () => {
                             "
                             @click="toggleAccountMenu"
                         >
-                            <Avatar class="size-8 shrink-0 rounded-lg">
-                                <AvatarImage :src="user?.avatar ?? ''" :alt="user?.name ?? ''" />
-                                <AvatarFallback
-                                    class="bg-primary text-primary-foreground rounded-lg text-[11px] font-bold"
-                                >
-                                    {{ getInitials(user?.name ?? 'U') }}
-                                </AvatarFallback>
-                            </Avatar>
+                            <UserAvatarFallback
+                                :src="user?.avatar ?? null"
+                                :seed="userAvatarSeed(user)"
+                                avatar-class="size-8 shrink-0 rounded-lg"
+                                fallback-round-class="rounded-lg"
+                            />
                             <div class="min-w-0 flex-1 text-left leading-tight group-data-[collapsible=icon]:hidden">
                                 <span class="text-sidebar-foreground block truncate text-xs font-semibold">{{
                                     user?.name ?? 'Pengguna'
@@ -281,14 +271,12 @@ watch(currentPath, () => {
                             >
                             <div role="none" class="px-2 py-2">
                                 <div class="flex gap-3">
-                                    <Avatar class="size-10 shrink-0 rounded-lg">
-                                        <AvatarImage :src="user?.avatar ?? ''" :alt="user?.name ?? ''" />
-                                        <AvatarFallback
-                                            class="bg-primary text-primary-foreground rounded-lg text-xs font-bold"
-                                        >
-                                            {{ getInitials(user?.name ?? 'U') }}
-                                        </AvatarFallback>
-                                    </Avatar>
+                                    <UserAvatarFallback
+                                        :src="user?.avatar ?? null"
+                                        :seed="userAvatarSeed(user)"
+                                        avatar-class="size-10 shrink-0 rounded-lg"
+                                        fallback-round-class="rounded-lg"
+                                    />
                                     <div class="min-w-0 flex-1 space-y-0.5">
                                         <p class="truncate text-sm leading-tight font-semibold">{{ user?.name }}</p>
                                         <p class="text-muted-foreground truncate text-xs">{{ user?.email }}</p>

@@ -85,8 +85,15 @@ const quotaPercent = computed(() => {
 
 <template>
     <Head :title="event.title" />
-
     <div class="mx-auto flex w-full max-w-6xl flex-col gap-8 xl:max-w-7xl">
+
+                <PageHeader
+            title="Informasi & pendaftaran"
+            subtitle="Ringkasan jadwal, lokasi, dan deskripsi lengkap dari penyelenggara."
+            back-href="/user/dashboard"
+        >
+        </PageHeader>
+
         <!-- Hero -->
         <section
             class="relative overflow-hidden rounded-2xl border border-border/70 bg-card shadow-[0_1px_0_0_rgba(0,0,0,0.04)] ring-1 ring-black/[0.04] dark:ring-white/[0.06]"
@@ -129,32 +136,7 @@ const quotaPercent = computed(() => {
             </div>
         </section>
 
-        <PageHeader
-            eyebrow="Detail acara"
-            title="Informasi & pendaftaran"
-            subtitle="Ringkasan jadwal, lokasi, dan deskripsi lengkap dari penyelenggara."
-            back-href="/user/dashboard"
-        >
-            <template #actions>
-                <Button v-if="!isRegistered && event.registration_status === 'open'" as-child class="rounded-xl shadow-sm">
-                    <Link :href="`/user/dashboard/events/${event.slug}/register`" class="inline-flex items-center gap-2">
-                        <Sparkles class="size-4" aria-hidden="true" />
-                        Daftar sekarang
-                    </Link>
-                </Button>
-                <Button v-else-if="isRegistered" variant="secondary" as-child class="rounded-xl">
-                    <Link :href="`/user/dashboard/events/${event.slug}/registration`" class="inline-flex items-center gap-2">
-                        Lihat pendaftaran
-                        <ArrowRight class="size-4" aria-hidden="true" />
-                    </Link>
-                </Button>
-            </template>
-        </PageHeader>
-
-        <div class="grid gap-8 xl:grid-cols-[minmax(0,1fr)_22rem] xl:items-start">
-            <div class="flex min-w-0 flex-col gap-8">
-                <!-- Meta grid -->
-                <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                     <div
                         v-for="m in metaBlocks"
                         :key="m.title"
@@ -174,6 +156,9 @@ const quotaPercent = computed(() => {
                     </div>
                 </div>
 
+
+        <div class="grid gap-8 xl:grid-cols-[minmax(0,1fr)_22rem] xl:items-start">
+            <div class="flex min-w-0 flex-col gap-8">
                 <!-- Deskripsi -->
                 <Card class="rounded-2xl border-border/70 shadow-sm ring-1 ring-black/[0.03] dark:ring-white/[0.05]">
                     <CardHeader class="border-b border-border/50 bg-muted/10 px-5 py-4 sm:px-6">
@@ -252,36 +237,10 @@ const quotaPercent = computed(() => {
                                 </Badge>
                             </div>
 
-                            <div
-                                v-if="registrationStatus === 'pending'"
-                                class="grid gap-3 rounded-xl border border-border bg-muted/15 p-4 md:grid-cols-2 md:items-start"
-                            >
-                                <div class="min-w-0 space-y-2">
-                                    <p
-                                        class="flex items-center gap-2 text-[10px] font-black uppercase tracking-wider text-muted-foreground"
-                                    >
-                                        <Mail class="size-3.5 shrink-0 text-primary" aria-hidden="true" />
-                                        Email
-                                    </p>
-                                    <ul class="list-inside list-disc space-y-1 text-[11px] font-medium leading-relaxed text-muted-foreground">
-                                        <li>Anda akan mendapat konfirmasi bahwa jawaban kami terima.</li>
-                                        <li>Jika diterima, email lain berisi QR check-in dan kode manual.</li>
-                                        <li class="inline-flex flex-wrap items-center gap-1.5">
-                                            <Server class="inline size-3.5 shrink-0 text-foreground/70" aria-hidden="true" />
-                                            Jika tidak masuk, pastikan worker antrean jalan (bukan driver <code class="rounded bg-muted px-1">sync</code>).
-                                        </li>
-                                    </ul>
-                                </div>
-                                <div class="min-w-0 space-y-2">
-                                    <p class="text-[10px] font-black uppercase tracking-wider text-muted-foreground">Langkah</p>
-                                    <p class="text-[11px] font-medium leading-relaxed text-foreground/85">
-                                        Periksa inbox untuk email keputusan. QR check-in hanya setelah diterima.
-                                    </p>
-                                </div>
-                            </div>
+                            
 
                             <div
-                                v-else-if="registrationStatus === 'accepted'"
+                                v-if="registrationStatus === 'accepted'"
                                 class="grid gap-3 rounded-xl border border-border bg-muted/15 p-4 md:grid-cols-2 md:items-start"
                             >
                                 <div class="min-w-0 space-y-2">

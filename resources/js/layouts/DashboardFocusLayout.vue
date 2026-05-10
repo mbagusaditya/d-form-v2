@@ -3,7 +3,8 @@ import 'vue-sonner/style.css'
 import { computed } from 'vue'
 import { usePage, Link, router } from '@inertiajs/vue3'
 import { Toaster } from '@/components/ui/sonner'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import UserAvatarFallback from '@/components/modules/user/UserAvatarFallback.vue'
+import { userAvatarSeed } from '@/lib/userAvatarFallback'
 import { Button } from '@/components/ui/button'
 import {
     DropdownMenu,
@@ -96,10 +97,6 @@ const breadcrumbs = computed<{ label: string; href?: string }[]>(() => {
     return crumbs;
 })
 
-function getInitials(name: string): string {
-    return name.split(' ').map((w) => w[0]).join('').toUpperCase().slice(0, 2)
-}
-
 function handleLogout(): void {
     router.post(logout().url)
 }
@@ -149,24 +146,24 @@ function handleLogout(): void {
                 <DropdownMenu>
                     <DropdownMenuTrigger as-child>
                         <Button variant="ghost" class="h-10 shrink-0 gap-2 rounded-lg px-2">
-                            <Avatar class="size-7 rounded-lg border border-border">
-                                <AvatarImage :src="user?.avatar ?? ''" :alt="user?.name ?? ''" />
-                                <AvatarFallback class="rounded-lg bg-primary text-[10px] font-semibold text-primary-foreground">
-                                    {{ getInitials(user?.name ?? 'U') }}
-                                </AvatarFallback>
-                            </Avatar>
+                            <UserAvatarFallback
+                                :src="user?.avatar ?? null"
+                                :seed="userAvatarSeed(user)"
+                                avatar-class="size-7 rounded-lg border border-border"
+                                fallback-round-class="rounded-lg"
+                            />
                             <span class="hidden text-sm font-semibold sm:inline">{{ user?.name }}</span>
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent class="min-w-48 rounded-xl" align="end" :side-offset="8">
                         <DropdownMenuLabel class="p-0 font-normal">
                             <div class="flex items-center gap-2.5 px-3 py-2.5">
-                                <Avatar class="size-8 rounded-full">
-                                    <AvatarImage :src="user?.avatar ?? ''" :alt="user?.name ?? ''" />
-                                    <AvatarFallback class="rounded-lg bg-primary text-xs font-bold text-primary-foreground">
-                                        {{ getInitials(user?.name ?? 'U') }}
-                                    </AvatarFallback>
-                                </Avatar>
+                                <UserAvatarFallback
+                                    :src="user?.avatar ?? null"
+                                    :seed="userAvatarSeed(user)"
+                                    avatar-class="size-8"
+                                    fallback-round-class="rounded-full"
+                                />
                                 <div class="grid text-left text-sm leading-tight">
                                     <span class="truncate font-semibold">{{ user?.name }}</span>
                                     <span class="truncate text-xs font-medium text-muted-foreground">{{ user?.email }}</span>

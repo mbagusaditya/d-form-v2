@@ -90,7 +90,7 @@ declare global {
 
     interface IFormSubmission {
         id: string
-        user: { id: string; name: string; email: string } | null
+        user: { id: string; name: string; email: string; avatar?: string | null } | null
         answers: Record<string, unknown>
         submitted_at: string
         review_status?: 'pending' | 'accepted' | 'rejected' | null

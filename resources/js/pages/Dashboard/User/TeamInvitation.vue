@@ -1,17 +1,20 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { Head, useForm, router } from '@inertiajs/vue3'
+import { computed, ref } from 'vue'
+import { Head, useForm } from '@inertiajs/vue3'
 import FormFillLayout from '@/layouts/FormFillLayout.vue'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { DatePicker } from '@/components/ui/date-picker'
 import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { readFieldMetadata, readFieldRules } from '@/lib/formFieldMetadata'
+import { getFormFieldOptionRows, formFieldBuilderType } from '@/lib/formFieldOptions'
 import { normalizeBannerSrc } from '@/components/modules/builder/formBanner'
-import type { FormFillOptionRow } from '@/types/form'
-import { CheckCircle2, Send } from 'lucide-vue-next'
+import FormFieldAnswerDisplay from '@/components/modules/dashboard/FormFieldAnswerDisplay.vue'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { CheckCircle2, Send, Users } from 'lucide-vue-next'
 
 defineOptions({ layout: FormFillLayout })
 
@@ -30,9 +33,7 @@ function metadata(field: IFormField): Record<string, unknown> {
 }
 
 function builderType(field: IFormField): string {
-    const value = metadata(field).builderType
-    if (typeof value === 'string') return value
-    return field.type
+    return formFieldBuilderType(field)
 }
 
 const appendableFields = computed(() => props.fields.filter((f) => f.is_append))
@@ -55,36 +56,7 @@ function initialFormState(): Record<string, unknown> {
 
 const confirmForm = useForm(initialFormState())
 
-function displayValue(field: IFormField): string {
-    const v = props.answers[field.name]
-    if (v == null || v === '') return '—'
-    if (Array.isArray(v)) return v.join(', ')
-    return String(v)
-}
-
-function getOptionRows(field: IFormField): FormFillOptionRow[] {
-    const oc = metadata(field).optionChoices
-    if (Array.isArray(oc)) {
-        const rows: FormFillOptionRow[] = []
-        for (const item of oc) {
-            if (item && typeof item === 'object' && item !== null) {
-                const typedItem = item as { type?: string; label?: string; imageUrl?: string }
-                const type = (typedItem.type === 'image' ? 'image' : 'text') as 'text' | 'image'
-                const label = String(typedItem.label ?? '').trim()
-                const rawUrl = typeof typedItem.imageUrl === 'string' ? String(typedItem.imageUrl).trim() : ''
-                rows.push({
-                    type,
-                    label: type === 'text' ? label : (label || 'Image Choice'),
-                    imageSrc: rawUrl ? normalizeBannerSrc(rawUrl) : undefined,
-                })
-            }
-        }
-        if (rows.length > 0) return rows
-    }
-    const csv = typeof metadata(field).options === 'string' ? metadata(field).options as string : ''
-    const labels = csv.split(',').map((s) => s.trim()).filter(Boolean)
-    return labels.map((label) => ({ type: 'text' as const, label }))
-}
+const declineDialogOpen = ref(false)
 
 function onCheckboxToggle(fieldName: string, option: string, checked: boolean) {
     const current = Array.isArray(confirmForm[fieldName]) ? (confirmForm[fieldName] as string[]) : []
@@ -97,24 +69,68 @@ function submitConfirm() {
         .post(props.confirmUrl, { forceFormData: true })
 }
 
-function submitReject() {
-    router.post(props.confirmUrl, { invitation_decision: 'reject' })
+const declineForm = useForm({
+    invitation_decision: 'reject' as const,
+    decline_reason: '',
+})
+
+function openDeclineDialog() {
+    declineForm.clearErrors()
+    declineForm.reset()
+    declineForm.invitation_decision = 'reject'
+    declineDialogOpen.value = true
+}
+
+function submitDeclineFromDialog() {
+    declineForm.post(props.confirmUrl, {
+        preserveScroll: true,
+        onSuccess: () => {
+            declineDialogOpen.value = false
+        },
+    })
 }
 </script>
 
 <template>
     <Head title="Registration invitation" />
 
-    <div class="mx-auto max-w-2xl px-2 pb-16">
-        <h1 class="font-display mt-6 text-2xl font-bold tracking-tight text-foreground">Registration invitation</h1>
-        <p class="mt-1 text-sm text-muted-foreground">
-            {{ event.title }} — {{ form.title }}
-        </p>
-        <p class="mt-4 text-sm text-muted-foreground">
-            Invited by: <span class="font-medium text-foreground">{{ leader.name }} ({{ leader.email }})</span>
-        </p>
+    <div class="mx-auto max-w-2xl space-y-6 px-2 pb-16">
+        <!-- Summary: same surface as other dashboard cards (white / card) -->
+        <section
+            class="overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-xs sm:p-6"
+            aria-labelledby="invitation-heading"
+        >
+            <div class="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between sm:gap-8">
+                <div class="min-w-0 flex-1 space-y-1">
+                    <p class="text-[0.6875rem] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                        Registration invitation
+                    </p>
+                    <h1 id="invitation-heading" class="font-display text-xl font-bold leading-tight tracking-tight text-foreground sm:text-2xl">
+                        {{ form.title }}
+                    </h1>
+                    <p class="text-sm text-muted-foreground">{{ event.title }}</p>
+                </div>
+                <div
+                    class="flex w-full shrink-0 flex-col gap-2 rounded-xl border border-border/80 bg-muted/30 p-3 sm:w-auto sm:min-w-[14rem]"
+                >
+                    <p class="text-[0.6875rem] font-semibold uppercase tracking-wide text-muted-foreground">Invited by</p>
+                    <div class="flex items-start gap-3">
+                        <div
+                            class="grid size-10 shrink-0 place-items-center rounded-full border border-border bg-card text-muted-foreground shadow-xs"
+                            aria-hidden="true"
+                        >
+                            <Users class="size-[1.125rem]" />
+                        </div>
+                        <div class="min-w-0">
+                            <p class="truncate text-sm font-semibold text-foreground">{{ leader.name }}</p>
+                            <p class="truncate text-xs text-muted-foreground">{{ leader.email }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
 
-        <Card v-if="alreadyConfirmed" class="mt-8 border-success/30 bg-success/5">
+        <Card v-if="alreadyConfirmed" class="border-success/30 bg-success/5">
             <CardContent class="flex flex-col items-center gap-3 py-10 text-center">
                 <CheckCircle2 class="size-10 text-success" />
                 <p class="font-medium text-foreground">You have already confirmed this team registration.</p>
@@ -125,11 +141,7 @@ function submitReject() {
         </Card>
 
         <template v-else>
-            <p class="mt-6 text-sm leading-relaxed text-muted-foreground">
-                Review the details below. You may update fields marked as editable, then accept or decline this invitation.
-            </p>
-
-            <div class="mt-8 flex flex-col gap-6">
+            <div class="flex flex-col gap-6">
                 <template v-for="field in fields" :key="field.id">
                     <div
                         v-if="builderType(field) === 'heading'"
@@ -149,7 +161,24 @@ function submitReject() {
 
                     <hr v-else-if="builderType(field) === 'divider'" class="app-divider my-1" />
 
-                    <div v-else-if="builderType(field) === 'banner'" class="hidden" />
+                    <div
+                        v-else-if="builderType(field) === 'banner'"
+                        class="overflow-hidden rounded-2xl border border-border bg-card shadow-xs"
+                    >
+                        <img
+                            v-if="typeof metadata(field).bannerUrl === 'string' && metadata(field).bannerUrl.trim()"
+                            :src="normalizeBannerSrc(metadata(field).bannerUrl as string)"
+                            alt=""
+                            class="max-h-72 w-full object-cover"
+                            loading="lazy"
+                        />
+                        <p
+                            v-if="typeof metadata(field).content === 'string' && metadata(field).content.trim()"
+                            class="border-t border-border px-4 py-3 text-sm text-muted-foreground"
+                        >
+                            {{ metadata(field).content }}
+                        </p>
+                    </div>
 
                     <!-- Appendable: editable -->
                     <Card v-else-if="field.is_append" class="overflow-hidden">
@@ -174,10 +203,13 @@ function submitReject() {
                                 v-model="confirmForm[field.name] as string"
                                 rows="4"
                             />
-                            <Input v-else-if="builderType(field) === 'date' || field.type === 'datePicker'" v-model="confirmForm[field.name] as string" type="date" />
+                            <DatePicker
+                                v-else-if="builderType(field) === 'date' || field.type === 'datePicker'"
+                                v-model="confirmForm[field.name] as string"
+                            />
                             <div v-else-if="field.type === 'checkbox' || (field.type === 'select' && readFieldMetadata(field).is_multiple)" class="flex flex-col gap-2">
                                 <label
-                                    v-for="row in getOptionRows(field)"
+                                    v-for="row in getFormFieldOptionRows(field)"
                                     :key="row.label"
                                     class="flex cursor-pointer items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm"
                                 >
@@ -185,11 +217,18 @@ function submitReject() {
                                         :checked="((confirmForm[field.name] as string[]) ?? []).includes(row.label)"
                                         @update:checked="(v: boolean | 'indeterminate') => onCheckboxToggle(field.name, row.label, v === true)"
                                     />
+                                    <img
+                                        v-if="row.imageSrc"
+                                        :src="row.imageSrc"
+                                        alt=""
+                                        class="size-7 rounded border border-border object-cover"
+                                        loading="lazy"
+                                    />
                                     {{ row.label }}
                                 </label>
                             </div>
                             <div v-else-if="field.type === 'radio' || builderType(field) === 'radio' || builderType(field) === 'yes_no'" class="flex flex-col gap-2">
-                                <label v-for="row in getOptionRows(field)" :key="row.label" class="flex items-center gap-2 text-sm">
+                                <label v-for="row in getFormFieldOptionRows(field)" :key="row.label" class="flex items-center gap-2 text-sm">
                                     <input
                                         type="radio"
                                         :name="field.name"
@@ -198,22 +237,42 @@ function submitReject() {
                                         class="size-4 accent-primary"
                                         @change="confirmForm[field.name] = row.label"
                                     />
+                                    <img
+                                        v-if="row.imageSrc"
+                                        :src="row.imageSrc"
+                                        alt=""
+                                        class="size-7 rounded border border-border object-cover"
+                                        loading="lazy"
+                                    />
                                     {{ row.label }}
                                 </label>
                             </div>
                             <Select v-else-if="field.type === 'select'" v-model="confirmForm[field.name] as string">
                                 <SelectTrigger><SelectValue :placeholder="'Select'" /></SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem v-for="row in getOptionRows(field)" :key="row.label" :value="row.label">
-                                        {{ row.label }}
+                                    <SelectItem v-for="row in getFormFieldOptionRows(field)" :key="row.label" :value="row.label">
+                                        <span class="flex items-center gap-2">
+                                            <img
+                                                v-if="row.imageSrc"
+                                                :src="row.imageSrc"
+                                                alt=""
+                                                class="size-7 rounded border border-border object-cover"
+                                                loading="lazy"
+                                            />
+                                            {{ row.label }}
+                                        </span>
                                     </SelectItem>
                                 </SelectContent>
                             </Select>
-                            <div v-else-if="field.type === 'fileUpload'" class="rounded-xl border border-dashed p-4">
-                                <p v-if="typeof answers[field.name] === 'string' && answers[field.name]" class="mb-2 text-xs text-muted-foreground">
-                                    Current file: {{ String(answers[field.name]).split('/').pop() }}
+                            <div v-else-if="field.type === 'fileUpload'" class="space-y-3 rounded-xl border border-dashed border-border p-4">
+                                <p v-if="typeof answers[field.name] === 'string' && answers[field.name]" class="text-xs font-medium text-muted-foreground">
+                                    Berkas saat ini (dari pendaftar utama)
                                 </p>
-                                <input type="file" class="w-full text-xs" @change="(e) => (confirmForm[field.name] = (e.target as HTMLInputElement).files?.[0] ?? null)" />
+                                <FormFieldAnswerDisplay v-if="typeof answers[field.name] === 'string' && answers[field.name]" :field="field" :value="answers[field.name]" />
+                                <div>
+                                    <p class="mb-1.5 text-xs text-muted-foreground">Unggah berkas baru (opsional mengganti)</p>
+                                    <input type="file" class="w-full text-xs" @change="(e) => (confirmForm[field.name] = (e.target as HTMLInputElement).files?.[0] ?? null)" />
+                                </div>
                             </div>
                             <p v-if="confirmForm.errors[field.name]" class="text-xs font-medium text-destructive">{{ confirmForm.errors[field.name] }}</p>
                         </CardContent>
@@ -224,22 +283,64 @@ function submitReject() {
                         <CardHeader class="pb-2 pt-4">
                             <CardTitle class="text-sm font-semibold text-muted-foreground">{{ field.label }}</CardTitle>
                         </CardHeader>
-                        <CardContent class="pb-4 text-sm text-foreground">
-                            {{ displayValue(field) }}
+                        <CardContent class="pb-4">
+                            <FormFieldAnswerDisplay :field="field" :value="answers[field.name]" />
                         </CardContent>
                     </Card>
                 </template>
-            </div>
 
-            <div class="mt-10 flex flex-wrap justify-end gap-3 border-t border-border pt-6">
-                <Button type="button" variant="outline" size="lg" :disabled="confirmForm.processing" @click="submitReject">
+            <div
+                class="flex flex-wrap justify-end gap-3 "
+            >
+                <Button type="button" variant="outline" size="lg" :disabled="confirmForm.processing" @click="openDeclineDialog">
                     Decline
                 </Button>
                 <Button type="button" size="lg" class="gap-2" :disabled="confirmForm.processing" @click="submitConfirm">
-                    <Send class="size-4" />
+                    
                     Accept invitation
                 </Button>
             </div>
+            </div>
         </template>
+        <Dialog v-model:open="declineDialogOpen">
+            <DialogContent class="max-w-lg gap-4 sm:max-w-lg" @pointer-down-outside="(e) => declineForm.processing && e.preventDefault()">
+                <DialogHeader>
+                    <DialogTitle>Decline this invitation?</DialogTitle>
+                    <DialogDescription class="text-left">
+                        This cannot be undone. Your team leader will be notified. Please share a brief reason below — it is sent to the
+                        leader by email only and is not stored in the application.
+                    </DialogDescription>
+                </DialogHeader>
+                <div class="space-y-2">
+                    <label for="decline_reason" class="text-sm font-medium text-foreground">
+                        Reason <span class="text-destructive">*</span>
+                    </label>
+                    <Textarea
+                        id="decline_reason"
+                        v-model="declineForm.decline_reason"
+                        rows="4"
+                        :disabled="declineForm.processing"
+                        placeholder="e.g. schedule conflict, no longer participating…"
+                        class="min-h-24 resize-y"
+                    />
+                    <p v-if="declineForm.errors.decline_reason" class="text-xs font-medium text-destructive">
+                        {{ declineForm.errors.decline_reason }}
+                    </p>
+                </div>
+                <DialogFooter class="gap-2 sm:gap-0">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        :disabled="declineForm.processing"
+                        @click="declineDialogOpen = false"
+                    >
+                        Cancel
+                    </Button>
+                    <Button type="button" variant="destructive" :disabled="declineForm.processing" @click="submitDeclineFromDialog">
+                        Decline invitation
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
     </div>
 </template>

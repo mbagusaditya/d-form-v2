@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { Head, Link } from '@inertiajs/vue3'
 import DashboardLayout from '@/layouts/DashboardLayout.vue'
 import PageHeader from '@/components/modules/dashboard/PageHeader.vue'
@@ -12,11 +13,13 @@ defineOptions({ layout: DashboardLayout })
 
 const props = defineProps<{
     event: IEvent
+    form: { id: string; title: string; registration_mode: 'single' | 'bundle' | 'team' | null } | null
     registration: {
         review_status: 'pending' | 'accepted' | 'rejected'
         submitted_at: string
         reviewed_at: string | null
         registration_code: string | null
+        registration_role: 'leader' | 'member' | null
         answers_summary: Record<string, string>
         qr_base64: string | null
     }
@@ -27,6 +30,33 @@ const statusLabels: Record<(typeof props.registration)['review_status'], string>
     accepted: 'Accepted',
     rejected: 'Not accepted',
 }
+
+const participationLabel = computed(() => {
+    const mode = props.form?.registration_mode
+    const role = props.registration.registration_role
+    if (mode === 'bundle') {
+        if (role === 'leader') return 'Ketua / pendaftar utama (bundle)'
+        if (role === 'member') return 'Peserta bundle'
+        return 'Bundle'
+    }
+    if (mode === 'team') {
+        if (role === 'leader') return 'Ketua tim'
+        if (role === 'member') return 'Anggota tim'
+        return 'Tim'
+    }
+    if (role === 'leader') return 'Pendaftar utama'
+    if (role === 'member') return 'Peserta'
+    return null
+})
+
+function isFileLink(value: string): boolean {
+    return /^https?:\/\//i.test(value) || value.startsWith('/storage/')
+}
+
+function isImageFileUrl(value: string): boolean {
+    const path = (value.split('?')[0] ?? '').toLowerCase()
+    return /\.(jpe?g|png|gif|webp|avif|bmp|svg)$/i.test(path)
+}
 </script>
 
 <template>
@@ -35,9 +65,13 @@ const statusLabels: Record<(typeof props.registration)['review_status'], string>
     <div class="flex flex-col gap-6">
         <PageHeader
             title="Your registration"
-            :subtitle="props.event.title"
+            :subtitle="props.form?.title ? `${props.form.title} · ${props.event.title}` : props.event.title"
             :back-href="`/user/dashboard/events/${props.event.slug}`"
         />
+
+        <div v-if="participationLabel" class="-mt-2 flex flex-wrap items-center gap-2">
+            <Badge variant="outline" class="text-[11px] font-medium">{{ participationLabel }}</Badge>
+        </div>
 
         <div class="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
             <div class="relative h-44 w-full sm:h-52">
@@ -90,7 +124,27 @@ const statusLabels: Record<(typeof props.registration)['review_status'], string>
                     class="rounded-lg border border-border/60 bg-muted/15 px-3 py-2"
                 >
                     <p class="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{{ label }}</p>
-                    <p class="mt-1 text-sm text-foreground">{{ value }}</p>
+                    <template v-if="isFileLink(value)">
+                        <div class="mt-2 space-y-2">
+                            <a
+                                :href="value"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                class="inline-flex text-sm font-medium text-primary underline-offset-4 hover:underline"
+                            >
+                                Buka / unduh berkas
+                            </a>
+                            <div v-if="isImageFileUrl(value)" class="pt-1">
+                                <img
+                                    :src="value"
+                                    alt=""
+                                    class="max-h-56 max-w-full rounded-md border border-border bg-background object-contain"
+                                    loading="lazy"
+                                />
+                            </div>
+                        </div>
+                    </template>
+                    <p v-else class="mt-1 text-sm text-foreground">{{ value }}</p>
                 </div>
             </CardContent>
         </Card>

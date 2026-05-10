@@ -1,0 +1,105 @@
+<?php
+
+namespace Tests\Unit\Services;
+
+use App\Enums\RegistrationRole;
+use App\Models\Event;
+use App\Models\Form;
+use App\Models\FormAnswer;
+use App\Models\FormField;
+use App\Models\User;
+use App\Services\Registration\RegistrationAnswersSummarizer;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
+use Tests\TestCase;
+
+class RegistrationAnswersSummarizerTest extends TestCase
+{
+    use RefreshDatabase;
+
+    public function test_bundle_member_sees_duplicatable_and_shared_fields(): void
+    {
+        $event = Event::factory()->create();
+        $form = Form::factory()->create([
+            'event_id' => $event->id,
+            'metadata' => ['registration_mode' => 'bundle', 'max_team_size' => 2],
+        ]);
+
+        FormField::factory()->create([
+            'form_id' => $form->id,
+            'name' => 'team_name',
+            'label' => 'Nama tim',
+            'order' => 1,
+            'input_type' => 'input',
+            'metadata' => [
+                'type' => 'text',
+                'rules' => [],
+            ],
+        ]);
+
+        FormField::factory()->create([
+            'form_id' => $form->id,
+            'name' => 'full_name',
+            'label' => 'Nama lengkap',
+            'order' => 2,
+            'input_type' => 'input',
+            'metadata' => [
+                'type' => 'text',
+                'rules' => [],
+                'duplicatable' => true,
+            ],
+        ]);
+
+        $user = User::factory()->create();
+        $answer = FormAnswer::factory()->create([
+            'form_id' => $form->id,
+            'user_id' => $user->id,
+            'registration_role' => RegistrationRole::Member,
+            'answers' => [
+                'team_name' => 'Nama tim dari ketua',
+                'full_name' => 'Nama peserta ini',
+            ],
+        ]);
+
+        $summary = app(RegistrationAnswersSummarizer::class)->summarizeForPortal($answer);
+
+        $this->assertArrayHasKey('Nama lengkap', $summary);
+        $this->assertSame('Nama peserta ini', $summary['Nama lengkap']);
+        $this->assertArrayHasKey('Nama tim', $summary);
+        $this->assertSame('Nama tim dari ketua', $summary['Nama tim']);
+    }
+
+    public function test_file_upload_field_returns_public_url(): void
+    {
+        Storage::fake('public');
+
+        $event = Event::factory()->create();
+        $form = Form::factory()->create(['event_id' => $event->id]);
+        $path = 'form-uploads/'.$form->id.'/bukti.png';
+        Storage::disk('public')->put($path, 'fake-image');
+
+        FormField::factory()->create([
+            'form_id' => $form->id,
+            'name' => 'payment_proof',
+            'label' => 'Bukti pembayaran',
+            'order' => 1,
+            'input_type' => 'fileUpload',
+            'metadata' => [
+                'rules' => ['required' => true],
+            ],
+        ]);
+
+        $user = User::factory()->create();
+        $answer = FormAnswer::factory()->create([
+            'form_id' => $form->id,
+            'user_id' => $user->id,
+            'answers' => ['payment_proof' => $path],
+        ]);
+
+        $summary = app(RegistrationAnswersSummarizer::class)->summarize($answer);
+
+        $this->assertArrayHasKey('Bukti pembayaran', $summary);
+        $this->assertStringContainsString($path, $summary['Bukti pembayaran']);
+        $this->assertStringContainsString('/storage/', $summary['Bukti pembayaran']);
+    }
+}

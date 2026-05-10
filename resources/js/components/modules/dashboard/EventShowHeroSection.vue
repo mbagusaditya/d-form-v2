@@ -69,12 +69,7 @@ defineProps<{
                     </div>
 
                     <div>
-                        <p
-                            class="mb-2 flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.12em] text-primary"
-                        >
-                            <Sparkles class="size-3 shrink-0" aria-hidden="true" />
-                            Ringkasan acara
-                        </p>
+                        
                         <h1
                             class="text-balance text-2xl font-semibold leading-tight tracking-tight text-foreground sm:text-3xl lg:text-[1.85rem] lg:leading-snug"
                         >
@@ -93,20 +88,7 @@ defineProps<{
                         </p>
                     </div>
 
-                    <div class="flex flex-wrap items-center gap-2 pt-1">
-                        <Button variant="outline" size="sm" class="rounded-full" as-child>
-                            <Link :href="`/admin/dashboard/events/${event.id}/registrants`">
-                                <Users class="mr-1.5 size-3.5" aria-hidden="true" />
-                                Pendaftar
-                            </Link>
-                        </Button>
-                        <Button size="sm" class="rounded-full" as-child>
-                            <Link :href="editEvent.url(event.id)">
-                                <Pencil class="mr-1.5 size-3.5" aria-hidden="true" />
-                                Ubah acara
-                            </Link>
-                        </Button>
-                    </div>
+                    
                 </div>
 
                 <div class="grid gap-2.5 sm:grid-cols-2 sm:gap-3">

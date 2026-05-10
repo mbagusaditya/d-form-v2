@@ -1,6 +1,7 @@
-import { computed } from 'vue'
+import { computed, onBeforeUnmount, reactive } from 'vue'
 import { useForm } from '@inertiajs/vue3'
 import { normalizeBannerSrc, pickFormBannerField } from '@/components/modules/builder/formBanner'
+import { getFormFieldOptionRows } from '@/lib/formFieldOptions'
 import { readFieldMetadata, readFieldRules } from '@/lib/formFieldMetadata'
 import type {
     FormAccessStatus,
@@ -127,39 +128,19 @@ export function useFormFillPage(props: {
 
     const answerForm = useForm(initialValues as Record<string, unknown>)
 
-    function listFromCsv(value: unknown): string[] {
-        return typeof value === 'string' ? value.split(',').map((item) => item.trim()).filter(Boolean) : []
-    }
+    /** Object URLs for local file previews (image upload); revoked on clear/unmount. */
+    const filePreviewUrls = reactive<Record<string, string>>({})
 
-    function getOptions(field: IFormField): string[] {
-        const direct = metadata(field).options
-        if (typeof direct === 'string') return listFromCsv(direct)
-        const ruleOptions = (rules(field).in as string | undefined)
-        return listFromCsv(ruleOptions)
+    function revokeFilePreview(fieldName: string): void {
+        const url = filePreviewUrls[fieldName]
+        if (url) {
+            URL.revokeObjectURL(url)
+            delete filePreviewUrls[fieldName]
+        }
     }
 
     function getOptionRows(field: IFormField): FormFillOptionRow[] {
-        const oc = metadata(field).optionChoices
-        if (Array.isArray(oc)) {
-            const rows: FormFillOptionRow[] = []
-            for (const item of oc) {
-                if (item && typeof item === 'object' && item !== null) {
-                    const typedItem = item as { type?: string; label?: string; imageUrl?: string }
-                    const type = (typedItem.type === 'image' ? 'image' : 'text') as 'text' | 'image'
-                    const label = String(typedItem.label ?? '').trim()
-                    const rawUrl = typeof typedItem.imageUrl === 'string' ? String(typedItem.imageUrl).trim() : ''
-
-                    rows.push({
-                        type,
-                        label: type === 'text' ? label : (label || 'Image Choice'),
-                        imageSrc: rawUrl ? normalizeBannerSrc(rawUrl) : undefined,
-                    })
-                }
-            }
-            if (rows.length > 0) return rows
-        }
-        const fallbackOptions = getOptions(field)
-        return fallbackOptions.map((label) => ({ type: 'text', label }))
+        return getFormFieldOptionRows(field)
     }
 
     function getSelectedOptionRow(field: IFormField, storageKey?: string) {
@@ -244,8 +225,24 @@ export function useFormFillPage(props: {
 
     function onFileChange(fieldName: string, event: Event) {
         const input = event.target as HTMLInputElement
-        answerForm[fieldName] = input.files?.[0] ?? null
+        const file = input.files?.[0] ?? null
+        revokeFilePreview(fieldName)
+        if (file) {
+            filePreviewUrls[fieldName] = URL.createObjectURL(file)
+        }
+        answerForm[fieldName] = file
     }
+
+    function clearFileUpload(fieldName: string) {
+        revokeFilePreview(fieldName)
+        answerForm[fieldName] = null
+    }
+
+    onBeforeUnmount(() => {
+        for (const key of Object.keys(filePreviewUrls)) {
+            revokeFilePreview(key)
+        }
+    })
 
     function submit() {
         if (isBlocked.value) return
@@ -286,6 +283,8 @@ export function useFormFillPage(props: {
         acceptValue,
         onCheckboxToggle,
         onFileChange,
+        clearFileUpload,
+        filePreviewUrls,
         submit,
         fieldError,
     }
