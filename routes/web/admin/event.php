@@ -8,6 +8,7 @@ use App\Http\Controllers\Dashboard\Events\Forms\FormAnswerReviewController;
 use App\Http\Controllers\Dashboard\Events\Forms\FormFillController;
 use App\Http\Controllers\Dashboard\Events\Forms\FormSubmissionController;
 use App\Http\Controllers\Dashboard\Events\Forms\FormSubmissionsController;
+use App\Http\Controllers\Dashboard\User\UserValidationController;
 
 Route::name('dashboard.')->prefix('/user/dashboard')->middleware('auth')->group(function () {
     Route::get('/events/{event}/forms/{form}/fill', FormFillController::class)
@@ -15,6 +16,9 @@ Route::name('dashboard.')->prefix('/user/dashboard')->middleware('auth')->group(
 
     Route::post('/events/{event}/forms/{form}/submit', FormSubmissionController::class)
         ->name('forms.submission');
+
+    Route::get('/users/check-email', [UserValidationController::class, 'checkEmail'])
+        ->name('users.check-email');
 });
 
 Route::name('dashboard.')->prefix('/admin/dashboard')->middleware(['auth', 'organizer'])->group(function () {
