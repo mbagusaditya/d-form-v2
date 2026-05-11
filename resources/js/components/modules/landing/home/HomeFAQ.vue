@@ -9,32 +9,40 @@ import {
 
 const faqs = [
     {
-        q: 'Apa itu DForm?',
-        a: 'DForm adalah platform web untuk membuat formulir pendaftaran acara, mengumpulkan data peserta, dan mengelola semuanya dari satu dasbor yang sederhana.',
+        q: 'Apa itu DForm dan untuk siapa?',
+        a: 'DForm adalah platform web yang dirancang untuk mempermudah pembuatan formulir pendaftaran acara. Cocok untuk panitia kampus, organisasi mahasiswa seperti DOSCOM, komunitas, dan siapa pun yang butuh alur pendaftaran digital yang terstruktur.',
     },
     {
-        q: 'Apakah gratis?',
-        a: 'Ya. Anda bisa langsung membuat acara dan formulir tanpa biaya apa pun setelah mendaftar.',
+        q: 'Apakah DForm gratis digunakan?',
+        a: 'Ya, DForm sepenuhnya gratis. Anda bisa langsung membuat akun, menambahkan acara, merancang formulir, dan mengumpulkan data peserta tanpa biaya apa pun.',
     },
     {
-        q: 'Bagaimana cara membuat formulir?',
-        a: 'Setelah membuat acara, buka Form Builder. Tambahkan field pertanyaan dengan drag & drop, atur mana yang wajib diisi, lalu publikasikan.',
+        q: 'Bagaimana cara membuat formulir pendaftaran?',
+        a: 'Setelah login, buat acara baru lalu masuk ke Form Builder. Anda bisa menambahkan berbagai jenis field (teks, dropdown, checkbox, radio, dsb.) dengan cara drag & drop. Atur mana yang wajib diisi, tambahkan opsi, lalu publikasikan formulir.',
     },
     {
-        q: 'Bisa mengelola beberapa acara?',
-        a: 'Tentu. Setiap acara memiliki formulir dan pendaftar tersendiri. Beralih antar acara dari satu dasbor.',
+        q: 'Jenis field apa saja yang tersedia?',
+        a: 'DForm mendukung text input, textarea, dropdown/select, checkbox, radio button, dan beberapa tipe lainnya. Setiap field bisa dikustomisasi label, placeholder, dan aturan validasinya.',
+    },
+    {
+        q: 'Bisa mengelola lebih dari satu acara?',
+        a: 'Tentu. Setiap acara memiliki formulir dan data peserta tersendiri. Anda bisa beralih antar acara dari dasbor tanpa khawatir data tercampur.',
+    },
+    {
+        q: 'Bagaimana peserta mengisi formulir?',
+        a: 'Cukup bagikan link formulir yang sudah dipublikasikan. Peserta tidak perlu membuat akun — mereka bisa langsung mengisi formulir dari browser di perangkat apa pun.',
     },
     {
         q: 'Apakah data peserta aman?',
-        a: 'Data dilindungi autentikasi dan validasi berlapis. Hanya penyelenggara berwenang yang bisa mengakses.',
+        a: 'Ya. Data dilindungi oleh sistem autentikasi dan otorisasi. Hanya penyelenggara yang berwenang yang bisa mengakses, melihat, dan mengekspor data peserta.',
     },
     {
-        q: 'Bisa ekspor data?',
-        a: 'Ya. Fitur ekspor tersedia sehingga tim bisa mengolah data pendaftaran sesuai kebutuhan.',
+        q: 'Bisa mengekspor data pendaftaran?',
+        a: 'Ya, fitur ekspor tersedia sehingga Anda bisa mengunduh data peserta untuk keperluan administrasi, pelaporan, atau pengolahan lebih lanjut.',
     },
     {
-        q: 'Siapa yang cocok pakai DForm?',
-        a: 'Panitia kampus, komunitas, organisasi, dan tim internal yang butuh alur pendaftaran simpel dan terstruktur.',
+        q: 'Apakah formulir bisa diakses dari HP?',
+        a: 'Ya, seluruh halaman DForm — termasuk formulir, dasbor, dan form builder — dirancang responsif dan bisa diakses dengan nyaman dari desktop, tablet, maupun ponsel.',
     },
 ]
 
@@ -50,52 +58,48 @@ onMounted(() => {
 </script>
 
 <template>
-    <section id="section-faq" class="border-t border-border/30 py-20 md:py-28">
-        <div class="mx-auto max-w-5xl px-5 lg:px-8">
-            <div class="grid gap-10 lg:grid-cols-[0.85fr_1.15fr] lg:gap-14">
-                <!-- Heading — sticky on desktop -->
-                <div
-                    :class="[
-                        'lg:sticky lg:top-28 lg:self-start transition-all duration-500',
-                        visible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0',
-                    ]"
-                >
-                    <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">FAQ</p>
-                    <h2 class="mt-2 text-[1.5rem] font-semibold tracking-tight text-foreground sm:text-[1.75rem]">
-                        Pertanyaan umum
-                    </h2>
-                    <p class="mt-2 text-[13px] leading-relaxed text-muted-foreground sm:text-[14px]">
-                        Jawaban singkat untuk hal-hal yang paling sering ditanyakan tentang DForm.
-                    </p>
-                </div>
+    <section id="section-faq" class="py-24 md:py-32">
+        <div class="mx-auto max-w-3xl px-6 lg:px-10">
+            <div
+                :class="[
+                    'mb-12 text-center transition-all duration-500',
+                    visible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0',
+                ]"
+            >
+                <p class="text-xs font-semibold uppercase tracking-[0.2em] text-primary">FAQ</p>
+                <h2 class="mt-3 font-display text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+                    Pertanyaan yang sering diajukan
+                </h2>
+                <p class="mt-3 max-w-lg mx-auto text-base leading-relaxed text-muted-foreground">
+                    Belum yakin? Temukan jawaban atas pertanyaan umum tentang DForm di bawah ini.
+                </p>
+            </div>
 
-                <!-- Accordion -->
-                <div
-                    :class="[
-                        'transition-all delay-75 duration-500',
-                        visible ? 'translate-y-0 opacity-100' : 'translate-y-5 opacity-0',
-                    ]"
-                >
-                    <Accordion type="single" collapsible class="w-full">
-                        <AccordionItem
-                            v-for="(faq, i) in faqs"
-                            :key="faq.q"
-                            :value="`faq-${i}`"
-                            class="border-border/50"
+            <div
+                :class="[
+                    'transition-all delay-75 duration-500',
+                    visible ? 'translate-y-0 opacity-100' : 'translate-y-5 opacity-0',
+                ]"
+            >
+                <Accordion type="single" collapsible class="w-full">
+                    <AccordionItem
+                        v-for="(faq, i) in faqs"
+                        :key="faq.q"
+                        :value="`faq-${i}`"
+                        class="border-border/40"
+                    >
+                        <AccordionTrigger
+                            class="py-5 text-left text-sm font-medium leading-snug hover:no-underline data-[state=open]:text-primary sm:text-base"
                         >
-                            <AccordionTrigger
-                                class="py-4 text-left text-[13px] font-medium leading-snug hover:no-underline data-[state=open]:text-primary sm:text-[14px]"
-                            >
-                                {{ faq.q }}
-                            </AccordionTrigger>
-                            <AccordionContent>
-                                <p class="pb-3 text-[12px] leading-relaxed text-muted-foreground sm:text-[13px]">
-                                    {{ faq.a }}
-                                </p>
-                            </AccordionContent>
-                        </AccordionItem>
-                    </Accordion>
-                </div>
+                            {{ faq.q }}
+                        </AccordionTrigger>
+                        <AccordionContent>
+                            <p class="pb-4 text-sm leading-relaxed text-muted-foreground">
+                                {{ faq.a }}
+                            </p>
+                        </AccordionContent>
+                    </AccordionItem>
+                </Accordion>
             </div>
         </div>
     </section>

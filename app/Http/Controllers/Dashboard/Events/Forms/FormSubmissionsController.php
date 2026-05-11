@@ -29,6 +29,7 @@ class FormSubmissionsController extends Controller
         $submissions = FormAnswer::query()
             ->with(['user:id,name,email', 'reviewer:id,name,email'])
             ->where('form_id', $form->id)
+            ->whereListedForOrganizerParticipantRoster()
             ->orderByDesc('created_at')
             ->paginate(25)
             ->through(fn (FormAnswer $answer) => [

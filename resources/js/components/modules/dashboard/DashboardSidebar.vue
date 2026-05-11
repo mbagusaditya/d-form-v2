@@ -22,11 +22,12 @@ import { userAvatarSeed } from '@/lib/userAvatarFallback';
 import {
     LayoutDashboard,
     CalendarDays,
+    CalendarCheck2,
+    Compass,
     Users,
     LogOut,
     ChevronsUpDown,
     Settings,
-    PieChart,
 } from 'lucide-vue-next';
 import logout from '@/actions/App/Http/Controllers/Auth/LogoutController';
 import useAuth from '@/utils/composables/useAuth';
@@ -48,17 +49,19 @@ const currentPath = computed(() => page.url);
 const mainNavItems = computed(() =>
     canManageEvents.value
         ? [{ label: 'Beranda', href: '/admin/dashboard', icon: LayoutDashboard }]
-        : [{ label: 'Beranda', href: '/user/dashboard', icon: LayoutDashboard }],
+        : [{ label: 'Beranda', href: '/user/dashboard/overview', icon: LayoutDashboard }],
 );
 
 const managementItems = computed(() =>
     canManageEvents.value
         ? [
               { label: 'Acara', href: '/admin/dashboard/events', icon: CalendarDays },
-              { label: 'Laporan', href: '/admin/dashboard/reports', icon: PieChart },
               { label: 'Rekrutmen', href: '/admin/dashboard/recruitment', icon: Users },
           ]
-        : [{ label: 'Acara saya', href: '/user/dashboard', icon: CalendarDays }],
+        : [
+              { label: 'Acara diikuti', href: '/user/dashboard', icon: CalendarCheck2 },
+              { label: 'Jelajah acara', href: '/user/dashboard/events/browse', icon: Compass },
+          ],
 );
 
 /** Kelas awal/akhir animasi mengikuti arah pembukaan panel. */
@@ -86,8 +89,14 @@ function isActive(href: string): boolean {
     if (href === '/admin/dashboard') {
         return p === '/admin/dashboard';
     }
+    if (href === '/user/dashboard/overview') {
+        return p === '/user/dashboard/overview';
+    }
+    if (href === '/user/dashboard/events/browse') {
+        return p === '/user/dashboard/events/browse';
+    }
     if (href === '/user/dashboard') {
-        return p === '/user/dashboard' || p.startsWith('/user/dashboard/');
+        return p === '/user/dashboard';
     }
     return p.startsWith(href);
 }
@@ -137,7 +146,11 @@ watch(currentPath, () => {
                         as-child
                         class="border-sidebar-border/90 bg-card/90 h-auto border shadow-xs"
                     >
-                        <Link :href="canManageEvents ? '/admin/dashboard' : '/user/dashboard'" class="flex items-center gap-3 py-2.5" @click="closeMobileIfNeeded">
+                        <Link
+                            :href="canManageEvents ? '/admin/dashboard' : '/user/dashboard/overview'"
+                            class="flex items-center gap-3 py-2.5"
+                            @click="closeMobileIfNeeded"
+                        >
                             <div
                                 class="bg-primary text-primary-foreground grid size-9 shrink-0 place-items-center rounded-xl text-xs font-bold shadow-sm"
                             >

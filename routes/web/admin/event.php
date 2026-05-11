@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Dashboard\Events\EventController;
+use App\Http\Controllers\Dashboard\Events\EventLaporanController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Dashboard\Events\Forms\FieldOperationController;
 use App\Http\Controllers\Dashboard\Events\Forms\FormController as EventFormController;
@@ -27,6 +28,9 @@ Route::name('dashboard.')->prefix('/admin/dashboard')->middleware(['auth', 'orga
 
     Route::post('/events/{event}/restore', [EventController::class, 'restore'])
         ->name('events.restore');
+
+    Route::get('/events/{event}/laporan', EventLaporanController::class)
+        ->name('events.laporan');
 
     Route::resource('/events', EventController::class)->only([
         'index',

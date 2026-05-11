@@ -42,6 +42,7 @@ class EventRegistrationsCsvExportController extends Controller
                 ->with(['user:id,name,email', 'form:id,title'])
                 ->whereNull('forms.deleted_at')
                 ->where('forms.event_id', $event->id)
+                ->whereListedForOrganizerParticipantRoster()
                 ->select('form_answers.*')
                 ->orderByDesc('form_answers.created_at')
                 ->chunk(250, function ($answers) use ($out, $summarizer): void {

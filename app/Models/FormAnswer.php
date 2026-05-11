@@ -75,6 +75,24 @@ class FormAnswer extends Model
     }
 
     /**
+     * Daftar peserta untuk panitia: ketua / pendaftar tunggal selalu; anggota tim & bundle hanya setelah menerima undangan.
+     */
+    public function scopeWhereListedForOrganizerParticipantRoster(Builder $query): Builder
+    {
+        return $query->where(function (Builder $w): void {
+            $w->where(function (Builder $nonInviteeMember): void {
+                $nonInviteeMember
+                    ->whereNull('registration_role')
+                    ->orWhere('registration_role', '!=', RegistrationRole::Member->value);
+            })->orWhere(function (Builder $confirmedMember): void {
+                $confirmedMember
+                    ->where('registration_role', RegistrationRole::Member->value)
+                    ->where('member_confirmation_status', MemberConfirmationStatus::Accepted->value);
+            });
+        });
+    }
+
+    /**
      * Omit teammate rows whose invitation ended without participating (participant portal summaries only).
      */
     public function scopeExcludeTerminatedInvitationMembers(Builder $query): Builder

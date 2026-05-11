@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Models\User;
+use App\Services\User\UserAvatarService;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -47,6 +48,7 @@ class HandleInertiaRequests extends Middleware
                     'roles' => $user->getRoleNames()->toArray(),
                     'has_local_password' => filled($user->getRawOriginal('password')),
                     'can_manage_events' => $user->can('events.list'),
+                    'avatar' => UserAvatarService::resolvePublicUrl($user->avatar, $request),
                 ],
             ) : null,
         ];

@@ -13,11 +13,12 @@ export interface RegistrantsStatCardModel {
 
 export function useEventRegistrantsPage(props: {
     event: IEvent
+    forms: { id: string; title: string }[]
     registrants: IRegistrant[]
-    registrationForm: { id: string; title: string } | null
 }) {
     const searchQuery = ref('')
     const activeStatusTab = ref<'all' | 'pending' | 'accepted' | 'rejected'>('all')
+    const activeFormFilter = ref<string>('all')
     const registrants = ref<IRegistrant[]>([...props.registrants])
 
     watch(
@@ -31,6 +32,10 @@ export function useEventRegistrantsPage(props: {
     const filteredRegistrants = computed(() => {
         let list = registrants.value
 
+        if (activeFormFilter.value !== 'all') {
+            list = list.filter((r) => r.form.id === activeFormFilter.value)
+        }
+
         if (activeStatusTab.value !== 'all') {
             list = list.filter((r) => r.status === activeStatusTab.value)
         }
@@ -38,7 +43,11 @@ export function useEventRegistrantsPage(props: {
         if (searchQuery.value.trim()) {
             const q = searchQuery.value.toLowerCase()
             list = list.filter(
-                (r) => r.user.name.toLowerCase().includes(q) || r.user.email.toLowerCase().includes(q),
+                (r) =>
+                    r.user.name.toLowerCase().includes(q)
+                    || r.user.email.toLowerCase().includes(q)
+                    || r.form.title.toLowerCase().includes(q)
+                    || (r.registration_code?.toLowerCase().includes(q) ?? false),
             )
         }
 
@@ -58,49 +67,58 @@ export function useEventRegistrantsPage(props: {
         return Math.round((statusCounts.value.accepted / decided) * 100)
     })
 
-    const statCards = computed<RegistrantsStatCardModel[]>(() => [
-        {
-            key: 'all',
-            label: 'Total pendaftar',
-            helper:
-                statusCounts.value.all === 1
-                    ? '1 pengiriman formulir'
-                    : `${statusCounts.value.all} pengiriman formulir`,
-            value: statusCounts.value.all,
-            icon: Users,
-            tone: 'primary',
-        },
-        {
-            key: 'pending',
-            label: 'Menunggu review',
-            helper:
-                statusCounts.value.pending === 1
-                    ? '1 orang belum diputuskan'
-                    : `${statusCounts.value.pending} orang belum diputuskan`,
-            value: statusCounts.value.pending,
-            icon: Clock,
-            tone: 'warning',
-        },
-        {
-            key: 'accepted',
-            label: 'Disetujui',
-            helper: `${approvalRate.value}% dari yang sudah diputus`,
-            value: statusCounts.value.accepted,
-            icon: ShieldCheck,
-            tone: 'success',
-        },
-        {
-            key: 'rejected',
-            label: 'Ditolak',
-            helper:
-                statusCounts.value.rejected === 1
-                    ? '1 keputusan ditolak'
-                    : `${statusCounts.value.rejected} keputusan ditolak`,
-            value: statusCounts.value.rejected,
-            icon: ShieldX,
-            tone: 'destructive',
-        },
-    ])
+    const statCards = computed<RegistrantsStatCardModel[]>(() => {
+        const formHint =
+            props.forms.length === 0
+                ? 'Belum ada formulir pada acara ini'
+                : props.forms.length === 1
+                  ? '1 formulir aktif'
+                  : `${props.forms.length} formulir aktif`
+
+        return [
+            {
+                key: 'all',
+                label: 'Total pendaftar',
+                helper:
+                    statusCounts.value.all === 1
+                        ? `1 pengiriman · ${formHint}`
+                        : `${statusCounts.value.all} pengiriman · ${formHint}`,
+                value: statusCounts.value.all,
+                icon: Users,
+                tone: 'primary',
+            },
+            {
+                key: 'pending',
+                label: 'Menunggu review',
+                helper:
+                    statusCounts.value.pending === 1
+                        ? '1 orang belum diputuskan'
+                        : `${statusCounts.value.pending} orang belum diputuskan`,
+                value: statusCounts.value.pending,
+                icon: Clock,
+                tone: 'warning',
+            },
+            {
+                key: 'accepted',
+                label: 'Disetujui',
+                helper: `${approvalRate.value}% dari yang sudah diputus`,
+                value: statusCounts.value.accepted,
+                icon: ShieldCheck,
+                tone: 'success',
+            },
+            {
+                key: 'rejected',
+                label: 'Ditolak',
+                helper:
+                    statusCounts.value.rejected === 1
+                        ? '1 keputusan ditolak'
+                        : `${statusCounts.value.rejected} keputusan ditolak`,
+                value: statusCounts.value.rejected,
+                icon: ShieldX,
+                tone: 'destructive',
+            },
+        ]
+    })
 
     const pendingCount = computed(() => statusCounts.value.pending)
 
@@ -108,9 +126,16 @@ export function useEventRegistrantsPage(props: {
         activeStatusTab.value = key
     }
 
+    function clearFilters(): void {
+        searchQuery.value = ''
+        activeStatusTab.value = 'all'
+        activeFormFilter.value = 'all'
+    }
+
     return {
         searchQuery,
         activeStatusTab,
+        activeFormFilter,
         registrants,
         filteredRegistrants,
         statusCounts,
@@ -118,5 +143,6 @@ export function useEventRegistrantsPage(props: {
         pendingCount,
         toneStyles: REGISTRANTS_TONE_STYLES,
         setStatTab,
+        clearFilters,
     }
 }

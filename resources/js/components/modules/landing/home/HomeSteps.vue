@@ -1,34 +1,39 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { Card, CardContent } from '@/components/ui/card'
 import LocalLottie from '@/components/core/LocalLottie.vue'
 import type { LottieName } from '@/lib/lotties'
+import { CalendarPlus, PenTool, Rocket } from 'lucide-vue-next'
+import type { Component } from 'vue'
 
 interface Step {
     num: string
     title: string
     desc: string
     lottie: LottieName
+    icon: Component
 }
 
 const steps: Step[] = [
     {
         num: '01',
-        title: 'Buat acara',
-        desc: 'Isi nama, tanggal, dan kapasitas. Cukup informasi dasar.',
-        lottie: 'eventsLive',
+        title: 'Buat acara baru',
+        desc: 'Tentukan nama acara, tanggal pelaksanaan, kuota peserta, dan deskripsi singkat. Hanya butuh beberapa detik.',
+        lottie: 'landingStepCreate',
+        icon: CalendarPlus,
     },
     {
         num: '02',
-        title: 'Rancang formulir',
-        desc: 'Tambahkan field, atur urutan, cek pratinjau sebelum terbit.',
-        lottie: 'featureModules',
+        title: 'Rancang formulir pendaftaran',
+        desc: 'Gunakan form builder visual untuk menambahkan field — teks, dropdown, checkbox, dan lainnya. Atur validasi dan pratinjau hasilnya.',
+        lottie: 'landingStepBuild',
+        icon: PenTool,
     },
     {
         num: '03',
-        title: 'Terbitkan & pantau',
-        desc: 'Bagikan link, lihat respons masuk secara real-time.',
-        lottie: 'analyticsPulse',
+        title: 'Publikasi & pantau data',
+        desc: 'Bagikan link formulir ke calon peserta. Pantau respons yang masuk secara real-time dan ekspor data kapan saja.',
+        lottie: 'landingStepMonitor',
+        icon: Rocket,
     },
 ]
 
@@ -44,42 +49,53 @@ onMounted(() => {
 </script>
 
 <template>
-    <section id="section-steps" class="py-20 md:py-28">
-        <div class="mx-auto max-w-5xl px-5 lg:px-8">
+    <section id="section-steps" class="bg-muted/30 py-24 md:py-32">
+        <div class="mx-auto max-w-7xl px-6 lg:px-10">
             <div
                 :class="[
-                    'mb-12 max-w-md transition-all duration-500',
+                    'mx-auto mb-16 max-w-2xl text-center transition-all duration-500',
                     visible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0',
                 ]"
             >
-                <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">Cara Kerja</p>
-                <h2 class="mt-2 text-[1.5rem] font-semibold tracking-tight text-foreground sm:text-[1.75rem]">
-                    Tiga langkah untuk memulai
+                <p class="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Cara Kerja</p>
+                <h2 class="mt-3 font-display text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+                    Mulai dari nol dalam 3 langkah
                 </h2>
-                <p class="mt-2 text-[13px] leading-relaxed text-muted-foreground sm:text-[14px]">
-                    Tidak perlu tutorial panjang — ikuti tiga langkah ini dan acara Anda siap menerima pendaftar.
+                <p class="mt-3 max-w-lg mx-auto text-base leading-relaxed text-muted-foreground">
+                    Tidak perlu keahlian teknis. Siapa pun bisa membuat dan mengelola
+                    formulir acara dalam hitungan menit.
                 </p>
             </div>
 
-            <div class="grid gap-5 sm:grid-cols-3">
-                <Card
+            <div class="relative grid gap-10 lg:gap-8 sm:grid-cols-3">
+                <!-- Connecting line (desktop) -->
+                <div
+                    class="pointer-events-none absolute top-[4.5rem] right-[17%] left-[17%] hidden h-px bg-gradient-to-r from-transparent via-border to-transparent sm:block"
+                    aria-hidden="true"
+                />
+
+                <div
                     v-for="(step, i) in steps"
                     :key="step.num"
                     :class="[
-                        'group overflow-hidden border-border/50 transition-all duration-500 hover:border-primary/25',
+                        'relative flex flex-col items-center text-center transition-all duration-500',
                         visible ? 'translate-y-0 opacity-100' : 'translate-y-6 opacity-0',
                     ]"
-                    :style="{ transitionDelay: `${120 + i * 80}ms` }"
+                    :style="{ transitionDelay: `${120 + i * 100}ms` }"
                 >
-                    <CardContent class="flex flex-col items-start p-5">
-                        <span class="text-[32px] font-bold leading-none text-primary/10">{{ step.num }}</span>
-                        <div class="my-4 flex w-full justify-center">
-                            <LocalLottie :name="step.lottie" :height="120" :width="120" />
-                        </div>
-                        <h3 class="text-[14px] font-semibold text-foreground">{{ step.title }}</h3>
-                        <p class="mt-1.5 text-[12px] leading-relaxed text-muted-foreground">{{ step.desc }}</p>
-                    </CardContent>
-                </Card>
+                    <!-- Step number -->
+                    <div class="relative z-10 mb-6 flex size-12 items-center justify-center rounded-2xl bg-primary text-sm font-bold text-primary-foreground shadow-sm">
+                        <component :is="step.icon" class="size-5" />
+                    </div>
+
+                    <!-- Lottie card -->
+                    <div class="mb-6 flex w-full justify-center overflow-hidden rounded-xl border border-border/30 bg-background/80 p-5">
+                        <LocalLottie :name="step.lottie" :height="140" :width="140" />
+                    </div>
+
+                    <h3 class="text-base font-semibold text-foreground">{{ step.title }}</h3>
+                    <p class="mt-2 max-w-[280px] text-sm leading-relaxed text-muted-foreground">{{ step.desc }}</p>
+                </div>
             </div>
         </div>
     </section>

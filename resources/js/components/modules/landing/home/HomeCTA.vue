@@ -2,6 +2,7 @@
 import { ref, onMounted } from 'vue'
 import { Button } from '@/components/ui/button'
 import LocalLottie from '@/components/core/LocalLottie.vue'
+import { ArrowRight } from 'lucide-vue-next'
 
 const visible = ref(false)
 onMounted(() => {
@@ -15,38 +16,52 @@ onMounted(() => {
 </script>
 
 <template>
-    <section id="section-cta" class="pb-20 md:pb-28">
-        <div class="mx-auto max-w-5xl px-5 lg:px-8">
-            <div
-                :class="[
-                    'relative overflow-hidden rounded-2xl border border-primary/12 bg-gradient-to-br from-primary/[0.03] to-transparent px-6 py-14 text-center transition-all duration-600 sm:px-10 md:py-18',
-                    visible ? 'translate-y-0 opacity-100' : 'translate-y-5 opacity-0',
-                ]"
-            >
-                <div class="relative mx-auto max-w-sm">
-                    <LocalLottie name="successCheck" :height="64" :width="64" class="mx-auto mb-5" />
+    <section id="section-cta" class="relative overflow-hidden bg-primary py-20 md:py-28">
+        <div
+            class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(255,255,255,0.12)_0%,transparent_60%)]"
+            aria-hidden="true"
+        />
+        <div
+            class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,rgba(255,255,255,0.08)_0%,transparent_60%)]"
+            aria-hidden="true"
+        />
 
-                    <h2 class="text-[1.35rem] font-semibold tracking-tight text-foreground sm:text-[1.6rem]">
-                        Siap mencoba?
-                    </h2>
-                    <p class="mt-2 text-[13px] leading-relaxed text-muted-foreground sm:text-[14px]">
-                        Buat akun gratis dan rancang formulir acara pertama Anda sekarang.
-                    </p>
+        <div
+            :class="[
+                'relative mx-auto max-w-2xl px-6 text-center transition-all duration-600 lg:px-10',
+                visible ? 'translate-y-0 opacity-100' : 'translate-y-5 opacity-0',
+            ]"
+        >
+            <LocalLottie name="landingCta" :height="80" :width="80" class="mx-auto mb-6" :lazy="false" />
 
-                    <div class="mt-7 flex flex-col justify-center gap-2.5 sm:flex-row">
-                        <Button as-child size="lg" class="h-10 rounded-lg px-7 text-[13px] font-semibold">
-                            <a href="/auth/register">Daftar Gratis</a>
-                        </Button>
-                        <Button
-                            as-child
-                            variant="ghost"
-                            size="lg"
-                            class="h-10 rounded-lg px-5 text-[13px] font-medium text-muted-foreground"
-                        >
-                            <a href="/docs">Baca Dokumentasi</a>
-                        </Button>
-                    </div>
-                </div>
+            <h2 class="font-display text-2xl font-bold tracking-tight text-primary-foreground sm:text-3xl lg:text-4xl">
+                Siap menyederhanakan pendaftaran acara?
+            </h2>
+            <p class="mt-4 mx-auto max-w-md text-base leading-relaxed text-primary-foreground/80">
+                Buat akun gratis sekarang dan rancang formulir acara pertama Anda.
+                Tidak perlu kartu kredit, tidak perlu keahlian teknis.
+            </p>
+
+            <div class="mt-9 flex flex-col justify-center gap-3 sm:flex-row">
+                <Button
+                    as-child
+                    size="lg"
+                    variant="secondary"
+                    class="h-12 rounded-xl px-8 text-sm font-semibold"
+                >
+                    <a href="/auth/register" class="inline-flex items-center gap-2">
+                        Mulai Sekarang — Gratis
+                        <ArrowRight class="size-4" />
+                    </a>
+                </Button>
+                <Button
+                    as-child
+                    size="lg"
+                    variant="ghost"
+                    class="h-12 rounded-xl px-6 text-sm font-medium text-primary-foreground/90 hover:bg-white/10 hover:text-primary-foreground"
+                >
+                    <a href="#section-faq">Baca FAQ</a>
+                </Button>
             </div>
         </div>
     </section>

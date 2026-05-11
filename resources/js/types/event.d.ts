@@ -21,6 +21,8 @@ declare global {
         deleted_at: string | null
         created_at: string
         updated_at: string
+        /** Portal "acara diikuti": anggota tim belum terima/ tolak undangan */
+        pending_team_invitation_url?: string | null
     }
 
     interface IForm {
@@ -74,6 +76,7 @@ declare global {
     interface IRegistrant {
         id: string
         form_id: string
+        form: { id: string; title: string }
         user: {
             id: string
             name: string

@@ -5,7 +5,9 @@ namespace Tests\Feature\Dashboard;
 use App\Models\User;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class ProfileTest extends TestCase
@@ -184,5 +186,63 @@ class ProfileTest extends TestCase
                 'email' => 'too@example.com',
             ])
             ->assertStatus(429);
+    }
+
+    public function test_authenticated_user_can_upload_avatar(): void
+    {
+        Storage::fake('public');
+
+        $user = User::factory()->create(['avatar' => null]);
+        $user->assignRole('member');
+
+        $file = UploadedFile::fake()->image('face.jpg', 100, 100);
+
+        $this->actingAs($user)
+            ->post(route('dashboard.profile.avatar.update'), [
+                'avatar' => $file,
+            ])
+            ->assertRedirect()
+            ->assertSessionHasNoErrors();
+
+        $user->refresh();
+        $this->assertNotNull($user->avatar);
+        $this->assertStringStartsWith('avatars/'.$user->id.'/', $user->avatar);
+        Storage::disk('public')->assertExists($user->avatar);
+    }
+
+    public function test_avatar_upload_rejects_non_image(): void
+    {
+        Storage::fake('public');
+
+        $user = User::factory()->create();
+        $user->assignRole('member');
+
+        $file = UploadedFile::fake()->create('doc.pdf', 100, 'application/pdf');
+
+        $this->actingAs($user)
+            ->post(route('dashboard.profile.avatar.update'), [
+                'avatar' => $file,
+            ])
+            ->assertSessionHasErrors('avatar');
+    }
+
+    public function test_user_can_delete_stored_avatar_file(): void
+    {
+        Storage::fake('public');
+
+        $user = User::factory()->create(['avatar' => null]);
+        $user->assignRole('member');
+
+        $path = 'avatars/'.$user->id.'/stored.jpg';
+        Storage::disk('public')->put($path, 'binary');
+        $user->forceFill(['avatar' => $path])->save();
+
+        $this->actingAs($user)
+            ->delete(route('dashboard.profile.avatar.destroy'))
+            ->assertRedirect()
+            ->assertSessionHasNoErrors();
+
+        $this->assertNull($user->fresh()->avatar);
+        Storage::disk('public')->assertMissing($path);
     }
 }

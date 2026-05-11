@@ -1,21 +1,97 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { Card, CardContent } from '@/components/ui/card'
+import {
+    GripVertical,
+    BarChart3,
+    Layers,
+    Download,
+    Smartphone,
+    ShieldCheck,
+    Palette,
+    Clock,
+    Users,
+    Eye,
+    ToggleRight,
+    FileText,
+} from 'lucide-vue-next'
+import type { Component } from 'vue'
 
-const features = [
-    { title: 'Form Builder Visual', desc: 'Drag & drop field, atur urutan, dan pratinjau real-time sebelum dipublikasikan.', accent: true },
-    { title: 'Dasbor Penyelenggara', desc: 'Ringkasan acara, jumlah pendaftar, dan status pendaftaran dari satu halaman.' },
-    { title: 'Multi-Acara', desc: 'Kelola banyak acara sekaligus — masing-masing dengan formulir tersendiri.' },
-    { title: 'Ekspor Data', desc: 'Unduh data peserta dalam format yang siap digunakan oleh tim Anda.' },
-    { title: 'Responsif', desc: 'Formulir tampil optimal di desktop, tablet, maupun ponsel.' },
-    { title: 'Keamanan Data', desc: 'Data peserta dilindungi autentikasi dan validasi berlapis.' },
+interface Feature {
+    title: string
+    desc: string
+    icon: Component
+    highlight?: boolean
+}
+
+const features: Feature[] = [
+    {
+        title: 'Visual Form Builder',
+        desc: 'Rancang formulir dengan drag & drop. Tambahkan teks, dropdown, checkbox, radio, dan banyak lagi — tanpa menulis kode sama sekali.',
+        icon: GripVertical,
+        highlight: true,
+    },
+    {
+        title: 'Dasbor Analitik',
+        desc: 'Pantau jumlah pendaftar, tren harian, dan status setiap acara dari satu halaman ringkasan yang interaktif.',
+        icon: BarChart3,
+    },
+    {
+        title: 'Multi-Event Management',
+        desc: 'Kelola puluhan acara secara bersamaan. Setiap acara punya formulir, peserta, dan konfigurasi independen.',
+        icon: Layers,
+    },
+    {
+        title: 'Ekspor ke Spreadsheet',
+        desc: 'Unduh seluruh data pendaftaran dalam format yang siap diproses untuk kebutuhan administrasi dan pelaporan tim.',
+        icon: Download,
+    },
+    {
+        title: 'Responsif di Semua Perangkat',
+        desc: 'Formulir, dasbor, dan form builder dirancang mobile-first. Peserta bisa mendaftar dari mana saja, kapan saja.',
+        icon: Smartphone,
+    },
+    {
+        title: 'Keamanan & Otorisasi',
+        desc: 'Data peserta dilindungi autentikasi, validasi field berlapis, dan akses berbasis peran agar tetap aman.',
+        icon: ShieldCheck,
+    },
+    {
+        title: 'Kustomisasi Branding',
+        desc: 'Sesuaikan banner, warna tema, dan identitas visual acara agar formulir terlihat profesional sesuai organisasi Anda.',
+        icon: Palette,
+    },
+    {
+        title: 'Real-time Updates',
+        desc: 'Setiap data yang masuk langsung muncul di dasbor tanpa refresh. Keputusan bisa diambil lebih cepat dengan data terkini.',
+        icon: Clock,
+    },
+    {
+        title: 'Manajemen Tim',
+        desc: 'Undang anggota tim sebagai admin atau moderator. Kolaborasi lebih efisien dalam mengelola peserta dan acara.',
+        icon: Users,
+    },
+    {
+        title: 'Pratinjau Formulir',
+        desc: 'Cek tampilan formulir sebelum dipublikasikan. Pastikan setiap field sudah sesuai, baik secara visual maupun fungsional.',
+        icon: Eye,
+    },
+    {
+        title: 'Validasi Otomatis',
+        desc: 'Atur field wajib, format email, batasan karakter, dan aturan custom — semua divalidasi otomatis saat peserta mengisi.',
+        icon: ToggleRight,
+    },
+    {
+        title: 'Laporan Acara',
+        desc: 'Buat laporan komprehensif tentang pelaksanaan acara, data peserta, dan statistik pendaftaran untuk dokumentasi.',
+        icon: FileText,
+    },
 ]
 
 const visible = ref(false)
 onMounted(() => {
     const obs = new IntersectionObserver(
         ([e]) => { if (e?.isIntersecting) { visible.value = true; obs.disconnect() } },
-        { threshold: 0.08 },
+        { threshold: 0.06 },
     )
     const el = document.getElementById('features-grid')
     if (el) obs.observe(el)
@@ -23,33 +99,50 @@ onMounted(() => {
 </script>
 
 <template>
-    <section id="features-grid" class="border-t border-border/30 py-20 md:py-28">
-        <div class="mx-auto max-w-5xl px-5 lg:px-8">
+    <section id="features-grid" class="border-t border-border/30 py-24 md:py-32">
+        <div class="mx-auto max-w-7xl px-6 lg:px-10">
             <div
-                :class="['mb-10 max-w-md transition-all duration-500', visible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0']"
+                :class="[
+                    'mx-auto mb-14 max-w-2xl text-center transition-all duration-500',
+                    visible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0',
+                ]"
             >
-                <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">Keunggulan</p>
-                <h2 class="mt-2 text-[1.5rem] font-semibold tracking-tight text-foreground sm:text-[1.75rem]">
-                    Fitur yang benar-benar penting
+                <p class="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Keunggulan</p>
+                <h2 class="mt-3 font-display text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+                    Fitur lengkap untuk setiap kebutuhan
                 </h2>
+                <p class="mt-3 mx-auto max-w-lg text-base leading-relaxed text-muted-foreground">
+                    Dari pembuatan formulir hingga pelaporan — semua fitur dirancang agar penyelenggara
+                    bisa fokus pada acara, bukan pada tools.
+                </p>
             </div>
 
-            <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                <Card
-                    v-for="(f, i) in features"
-                    :key="f.title"
+            <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                <div
+                    v-for="(feat, i) in features"
+                    :key="feat.title"
                     :class="[
-                        'group border-border/40 transition-all duration-400 hover:border-primary/20',
+                        'group rounded-2xl border p-6 transition-all duration-400',
+                        feat.highlight
+                            ? 'border-primary/25 bg-primary/[0.04] ring-1 ring-primary/10 hover:bg-primary/[0.06]'
+                            : 'border-border/40 bg-muted/20 hover:border-primary/20 hover:bg-muted/40',
                         visible ? 'translate-y-0 opacity-100' : 'translate-y-5 opacity-0',
                     ]"
-                    :style="{ transitionDelay: `${80 + i * 50}ms` }"
+                    :style="{ transitionDelay: `${60 + i * 40}ms` }"
                 >
-                    <CardContent class="p-5">
-                        <div :class="['mb-3 size-1.5 rounded-full', f.accent ? 'bg-primary' : 'bg-border group-hover:bg-primary/50']" />
-                        <h3 class="text-[14px] font-semibold text-foreground">{{ f.title }}</h3>
-                        <p class="mt-1.5 text-[12px] leading-relaxed text-muted-foreground">{{ f.desc }}</p>
-                    </CardContent>
-                </Card>
+                    <div
+                        :class="[
+                            'mb-4 flex size-10 items-center justify-center rounded-xl transition-colors duration-200',
+                            feat.highlight
+                                ? 'bg-primary text-primary-foreground'
+                                : 'bg-primary/10 text-primary group-hover:bg-primary/15',
+                        ]"
+                    >
+                        <component :is="feat.icon" class="size-5" />
+                    </div>
+                    <h3 class="text-sm font-semibold text-foreground">{{ feat.title }}</h3>
+                    <p class="mt-2 text-xs leading-relaxed text-muted-foreground">{{ feat.desc }}</p>
+                </div>
             </div>
         </div>
     </section>

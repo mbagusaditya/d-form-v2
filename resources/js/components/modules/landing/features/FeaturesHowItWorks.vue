@@ -1,22 +1,51 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { Card, CardContent } from '@/components/ui/card'
 import LocalLottie from '@/components/core/LocalLottie.vue'
 import type { LottieName } from '@/lib/lotties'
+import { CalendarPlus, PenTool, Rocket } from 'lucide-vue-next'
+import type { Component } from 'vue'
 
-interface Step { num: string; title: string; desc: string; lottie: LottieName }
+interface Step {
+    num: string
+    title: string
+    desc: string
+    detail: string
+    lottie: LottieName
+    icon: Component
+}
 
 const steps: Step[] = [
-    { num: '01', title: 'Buat acara', desc: 'Tentukan nama, tanggal, dan kapasitas acara Anda.', lottie: 'eventsLive' },
-    { num: '02', title: 'Rancang formulir', desc: 'Tambahkan field pertanyaan, atur urutan, lalu pratinjau.', lottie: 'featureModules' },
-    { num: '03', title: 'Terbitkan & pantau', desc: 'Bagikan link dan lihat respons masuk secara real-time.', lottie: 'analyticsPulse' },
+    {
+        num: '01',
+        title: 'Buat acara baru',
+        desc: 'Tentukan informasi dasar acara Anda.',
+        detail: 'Isi nama acara, tanggal pelaksanaan, kuota peserta, dan deskripsi singkat. Anda juga bisa mengunggah banner dan mengatur kapan pendaftaran dibuka dan ditutup.',
+        lottie: 'landingStepCreate',
+        icon: CalendarPlus,
+    },
+    {
+        num: '02',
+        title: 'Rancang formulir',
+        desc: 'Desain form sesuai kebutuhan acara.',
+        detail: 'Buka Form Builder, tambahkan field dengan drag & drop — mulai dari teks, dropdown, radio, checkbox, hingga file upload. Atur validasi, urutan, dan pratinjau sebelum dipublikasikan.',
+        lottie: 'landingStepBuild',
+        icon: PenTool,
+    },
+    {
+        num: '03',
+        title: 'Publikasi & kelola',
+        desc: 'Bagikan dan pantau secara real-time.',
+        detail: 'Setelah formulir terbit, bagikan link ke calon peserta. Pantau respons masuk dari dasbor, lihat statistik pendaftaran, dan ekspor data kapan pun dibutuhkan.',
+        lottie: 'landingStepMonitor',
+        icon: Rocket,
+    },
 ]
 
 const visible = ref(false)
 onMounted(() => {
     const obs = new IntersectionObserver(
         ([e]) => { if (e?.isIntersecting) { visible.value = true; obs.disconnect() } },
-        { threshold: 0.15 },
+        { threshold: 0.12 },
     )
     const el = document.getElementById('features-how')
     if (el) obs.observe(el)
@@ -24,28 +53,54 @@ onMounted(() => {
 </script>
 
 <template>
-    <section id="features-how" class="py-20 md:py-28">
-        <div class="mx-auto max-w-5xl px-5 lg:px-8">
-            <div :class="['mb-12 max-w-md transition-all duration-500', visible ? 'opacity-100' : 'opacity-0']">
-                <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">Cara Kerja</p>
-                <h2 class="mt-2 text-[1.5rem] font-semibold tracking-tight text-foreground sm:text-[1.75rem]">Tiga langkah mudah</h2>
+    <section id="features-how" class="bg-muted/30 py-24 md:py-32">
+        <div class="mx-auto max-w-7xl px-6 lg:px-10">
+            <div
+                :class="[
+                    'mx-auto mb-16 max-w-2xl text-center transition-all duration-500',
+                    visible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0',
+                ]"
+            >
+                <p class="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Cara Kerja</p>
+                <h2 class="mt-3 font-display text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+                    Dari nol sampai siap terima pendaftar
+                </h2>
+                <p class="mt-3 mx-auto max-w-lg text-base leading-relaxed text-muted-foreground">
+                    Ikuti tiga langkah sederhana ini dan acara Anda langsung bisa menerima pendaftaran.
+                </p>
             </div>
-            <div class="grid gap-5 sm:grid-cols-3">
-                <Card
-                    v-for="(s, i) in steps"
-                    :key="s.num"
-                    :class="['group overflow-hidden border-border/50 transition-all duration-500 hover:border-primary/25', visible ? 'translate-y-0 opacity-100' : 'translate-y-6 opacity-0']"
-                    :style="{ transitionDelay: `${120 + i * 80}ms` }"
+
+            <div class="flex flex-col gap-12 lg:gap-16">
+                <div
+                    v-for="(step, i) in steps"
+                    :key="step.num"
+                    :class="[
+                        'grid items-center gap-10 lg:grid-cols-2 lg:gap-16 transition-all duration-600',
+                        visible ? 'translate-y-0 opacity-100' : 'translate-y-6 opacity-0',
+                    ]"
+                    :style="{ transitionDelay: `${100 + i * 120}ms` }"
                 >
-                    <CardContent class="flex flex-col items-start p-5">
-                        <span class="text-[32px] font-bold leading-none text-primary/10">{{ s.num }}</span>
-                        <div class="my-4 flex w-full justify-center">
-                            <LocalLottie :name="s.lottie" :height="120" :width="120" />
+                    <!-- Lottie card — alternates position -->
+                    <div :class="['order-2', i % 2 === 0 ? 'lg:order-2' : 'lg:order-1']">
+                        <div class="overflow-hidden rounded-2xl border border-border/30 bg-background/80 p-6 shadow-sm sm:p-8">
+                            <LocalLottie :name="step.lottie" :height="200" width="100%" />
                         </div>
-                        <h3 class="text-[14px] font-semibold text-foreground">{{ s.title }}</h3>
-                        <p class="mt-1.5 text-[12px] leading-relaxed text-muted-foreground">{{ s.desc }}</p>
-                    </CardContent>
-                </Card>
+                    </div>
+
+                    <!-- Text content -->
+                    <div :class="['order-1', i % 2 === 0 ? 'lg:order-1' : 'lg:order-2']">
+                        <div class="mb-4 flex items-center gap-3">
+                            <div class="flex size-10 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+                                <component :is="step.icon" class="size-5" />
+                            </div>
+                            <span class="text-sm font-bold tracking-wider text-primary/40">LANGKAH {{ step.num }}</span>
+                        </div>
+
+                        <h3 class="text-xl font-bold tracking-tight text-foreground sm:text-2xl">{{ step.title }}</h3>
+                        <p class="mt-2 text-sm font-medium text-muted-foreground">{{ step.desc }}</p>
+                        <p class="mt-4 text-sm leading-relaxed text-muted-foreground">{{ step.detail }}</p>
+                    </div>
+                </div>
             </div>
         </div>
     </section>

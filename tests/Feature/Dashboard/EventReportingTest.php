@@ -69,15 +69,34 @@ class EventReportingTest extends TestCase
             ->assertRedirect(route('dashboard.user.events'));
     }
 
-    public function test_admin_can_view_reports_dashboard(): void
+    public function test_admin_reports_route_redirects_to_events_index(): void
     {
         $this->actingAs($this->admin())
             ->get(route('dashboard.reports.index'))
+            ->assertRedirect(route('dashboard.events.index'));
+    }
+
+    public function test_admin_can_view_event_laporan_page(): void
+    {
+        [$event] = $this->eventWithForm();
+
+        $this->actingAs($this->admin())
+            ->get(route('dashboard.events.laporan', $event))
             ->assertOk()
             ->assertInertia(fn ($page) => $page
-                ->component('Dashboard/Reports/Index')
+                ->component('Dashboard/Events/Laporan')
                 ->has('globalSummary')
-                ->has('events'));
+                ->has('eventReporting.summary')
+                ->has('eventReporting.attendanceLog.data'));
+    }
+
+    public function test_member_cannot_view_event_laporan_page(): void
+    {
+        [$event] = $this->eventWithForm();
+
+        $this->actingAs($this->member())
+            ->get(route('dashboard.events.laporan', $event))
+            ->assertRedirect(route('dashboard.user.events'));
     }
 
     public function test_admin_can_download_registrations_csv_with_expected_columns(): void

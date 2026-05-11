@@ -5,7 +5,9 @@ interface IUser {
     id: string;
     name: string;
     email: string;
-    avatar: string;
+    /** URL tampilan (path `storage/` sudah di-resolve di `HandleInertiaRequests`). */
+    avatar: string | null;
+    email_verified_at?: string | null;
     roles?: string[];
     /** True when the user has a password hash (email/password accounts); false for OAuth-only signups. */
     has_local_password?: boolean;

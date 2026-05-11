@@ -152,12 +152,32 @@ function choiceImageSrc(entry: FieldOptionEntry): string | undefined {
                 </div>
 
                 <!-- Dropdown -->
-                <div
-                    v-else-if="field.type === 'dropdown'"
-                    class="flex items-center justify-between rounded-xl border border-border bg-muted/25 px-4 py-3"
-                >
-                    <span class="text-sm text-muted-foreground/75">Pilih opsi…</span>
-                    <ChevronDown class="size-4 text-muted-foreground/50" />
+                <div v-else-if="field.type === 'dropdown'" class="space-y-2">
+                    <div
+                        class="flex items-center justify-between rounded-xl border border-border bg-muted/25 px-4 py-3"
+                    >
+                        <span class="text-sm text-muted-foreground/75">Pilih opsi…</span>
+                        <ChevronDown class="size-4 text-muted-foreground/50" />
+                    </div>
+                    <div class="space-y-1.5 rounded-xl border border-border/70 bg-card p-2.5">
+                        <div
+                            v-for="(opt, i) in choiceOptions"
+                            :key="opt.id || i"
+                            class="flex items-center gap-2.5 rounded-lg border border-border/60 bg-muted/20 px-2.5 py-2 text-xs text-foreground/85"
+                        >
+                            <div
+                                v-if="opt.type === 'image' && choiceImageSrc(opt)"
+                                class="size-10 shrink-0 overflow-hidden rounded-md border border-border"
+                            >
+                                <img
+                                    :src="choiceImageSrc(opt)"
+                                    alt=""
+                                    class="size-full object-cover"
+                                />
+                            </div>
+                            <span v-else>{{ optionLabel(opt) }}</span>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Checkbox -->

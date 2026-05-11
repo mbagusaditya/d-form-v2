@@ -3,6 +3,10 @@
 This folder hosts Lottie / Bodymovin JSON files served as static assets at
 `/lotties/<name>.json`. They power the `<LocalLottie>` component.
 
+## Animations in this folder
+
+- `registrants-waiting.json` — roster kosong / menunggu data (robot idle), untuk halaman pendaftar; key registry `registrantsWaiting` (unduhan dari LottieFiles, periksa lisensi di sumber jika Anda mendistribusikan ulang).
+
 ## How animations are picked up
 
 `resources/js/lib/lotties.ts` is the registry that maps a camelCase key to a

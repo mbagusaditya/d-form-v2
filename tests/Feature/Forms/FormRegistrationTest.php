@@ -1269,6 +1269,43 @@ class FormRegistrationTest extends TestCase
                  );
     }
 
+    public function test_submissions_list_excludes_team_member_until_invitation_accepted(): void
+    {
+        $admin  = $this->admin();
+        $event  = $this->openEvent();
+        $form   = $this->openForm($event);
+        $leader = $this->member();
+        $member = $this->member();
+
+        $leaderAnswer = FormAnswer::factory()->create([
+            'form_id' => $form->id,
+            'user_id' => $leader->id,
+            'registration_role' => RegistrationRole::Leader,
+            'member_confirmation_status' => MemberConfirmationStatus::Accepted,
+            'answers' => ['full_name' => 'Leader'],
+        ]);
+
+        FormAnswer::factory()->create([
+            'form_id' => $form->id,
+            'user_id' => $member->id,
+            'leader_form_answer_id' => $leaderAnswer->id,
+            'registration_role' => RegistrationRole::Member,
+            'member_confirmation_status' => MemberConfirmationStatus::Pending,
+            'invitation_token' => 'tok-submission-hide',
+            'invitation_expired_at' => now()->addDays(7),
+            'answers' => ['full_name' => 'Member Pending'],
+        ]);
+
+        $this->actingAs($admin)->get($this->submissionsPath($event, $form))
+            ->assertOk()
+            ->assertInertia(
+                fn ($page) => $page
+                    ->component('Dashboard/Events/Forms/Submissions')
+                    ->has('submissions.data', 1)
+                    ->where('submissions.data.0.user.email', $leader->email)
+            );
+    }
+
     // =========================================================================
     // REVIEW SUBMISSION (Accept/Reject)
     // =========================================================================
@@ -1599,7 +1636,7 @@ class FormRegistrationTest extends TestCase
                  fn ($page) => $page
                      ->component('Dashboard/Events/Registrants')
                      ->has('registrants', 1)
-                     ->where('registrationForm.id', $form->id),
+                     ->where('forms.0.id', $form->id),
              );
     }
 

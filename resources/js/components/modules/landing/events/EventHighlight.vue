@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { MapPin, Users, ArrowRight } from 'lucide-vue-next'
 
 const props = defineProps<{
     events: IEvent[]
@@ -17,52 +19,103 @@ onMounted(() => {
     if (el) obs.observe(el)
 })
 
-const featured = props.events.slice(0, 3)
+const featured = computed(() => props.events.slice(0, 3))
 
 const statusLabel = (s: string) => {
-    if (s === 'open') return 'Dibuka'
-    if (s === 'full') return 'Penuh'
+    if (s === 'open') return 'Pendaftaran Dibuka'
+    if (s === 'full') return 'Kuota Penuh'
     if (s === 'closed') return 'Ditutup'
-    return 'Segera'
+    return 'Segera Dibuka'
 }
 
-const statusColor = (s: string) =>
-    s === 'open' ? 'bg-green-500/10 text-green-600 border-green-500/20' : 'bg-muted text-muted-foreground border-border'
+const statusVariant = (s: string) =>
+    s === 'open'
+        ? 'border-green-500/20 bg-green-500/10 text-green-600'
+        : s === 'full'
+          ? 'border-amber-500/20 bg-amber-500/10 text-amber-600'
+          : 'border-border bg-muted text-muted-foreground'
 </script>
 
 <template>
-    <section id="event-highlight" class="border-t border-border/30 py-16 md:py-24">
-        <div class="mx-auto max-w-5xl px-5 lg:px-8">
-            <div :class="['mb-10 transition-all duration-500', visible ? 'opacity-100' : 'opacity-0']">
-                <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">Sorotan</p>
-                <h2 class="mt-2 text-[1.5rem] font-semibold tracking-tight text-foreground sm:text-[1.75rem]">Acara terbaru</h2>
+    <section id="event-highlight" class="bg-muted/30 py-24 md:py-32">
+        <div class="mx-auto max-w-7xl px-6 lg:px-10">
+            <div
+                :class="[
+                    'mx-auto mb-14 max-w-2xl text-center transition-all duration-500',
+                    visible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0',
+                ]"
+            >
+                <p class="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Sorotan</p>
+                <h2 class="mt-3 font-display text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+                    Acara yang sedang berlangsung
+                </h2>
+                <p class="mt-3 mx-auto max-w-lg text-base leading-relaxed text-muted-foreground">
+                    Beberapa acara pilihan yang saat ini membuka pendaftaran. Jangan lewatkan kesempatan untuk bergabung.
+                </p>
             </div>
 
-            <div v-if="featured.length" class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            <div v-if="featured.length" class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                 <Card
                     v-for="(ev, i) in featured"
                     :key="ev.id"
-                    :class="['group overflow-hidden border-border/50 transition-all duration-500 hover:border-primary/25', visible ? 'translate-y-0 opacity-100' : 'translate-y-6 opacity-0']"
+                    :class="[
+                        'group overflow-hidden border-border/40 transition-all duration-500 hover:border-primary/25 hover:shadow-sm',
+                        visible ? 'translate-y-0 opacity-100' : 'translate-y-6 opacity-0',
+                    ]"
                     :style="{ transitionDelay: `${100 + i * 80}ms` }"
                 >
-                    <div v-if="ev.banner_url" class="h-36 w-full overflow-hidden bg-muted">
-                        <img :src="ev.banner_url" :alt="ev.title" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                    <div class="relative h-40 w-full overflow-hidden bg-muted">
+                        <img
+                            v-if="ev.banner_url"
+                            :src="ev.banner_url"
+                            :alt="ev.title"
+                            class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        />
+                        <div v-else class="flex h-full items-center justify-center">
+                            <span class="text-3xl font-bold text-muted-foreground/20">{{ ev.title.charAt(0) }}</span>
+                        </div>
+                        <Badge
+                            variant="outline"
+                            :class="['absolute top-3 right-3 text-[10px] backdrop-blur-sm', statusVariant(ev.registration_status)]"
+                        >
+                            {{ statusLabel(ev.registration_status) }}
+                        </Badge>
                     </div>
+
                     <CardContent class="p-5">
-                        <div class="mb-2 flex items-center gap-2">
-                            <Badge variant="outline" :class="['text-[10px]', statusColor(ev.registration_status)]">
-                                {{ statusLabel(ev.registration_status) }}
-                            </Badge>
+                        <h3 class="text-base font-semibold text-foreground line-clamp-2 group-hover:text-primary transition-colors">
+                            {{ ev.title }}
+                        </h3>
+
+                        <div class="mt-3 flex flex-col gap-1.5 text-xs text-muted-foreground">
+                            <span v-if="ev.location" class="flex items-center gap-1.5">
+                                <MapPin class="size-3.5 shrink-0" />
+                                {{ ev.location }}
+                            </span>
+                            <span class="flex items-center gap-1.5">
+                                <Users class="size-3.5 shrink-0" />
+                                {{ ev.registered_count }} / {{ ev.quota }} pendaftar
+                            </span>
                         </div>
-                        <h3 class="text-[14px] font-semibold text-foreground line-clamp-2">{{ ev.title }}</h3>
-                        <p class="mt-1 text-[12px] text-muted-foreground">{{ ev.location }}</p>
-                        <div class="mt-3 flex items-center justify-between text-[11px] text-muted-foreground">
-                            <span>{{ ev.registered_count }}/{{ ev.quota }} pendaftar</span>
-                        </div>
+
+                        <Button
+                            as-child
+                            variant="outline"
+                            size="sm"
+                            class="mt-4 h-9 w-full rounded-lg text-xs font-medium"
+                        >
+                            <a :href="`/events/${ev.slug}`" class="inline-flex items-center justify-center gap-1.5">
+                                Lihat Detail
+                                <ArrowRight class="size-3.5" />
+                            </a>
+                        </Button>
                     </CardContent>
                 </Card>
             </div>
-            <p v-else class="text-[14px] text-muted-foreground">Belum ada acara yang tersedia.</p>
+
+            <div v-else class="mx-auto max-w-md rounded-2xl border border-border/40 bg-card p-10 text-center">
+                <p class="text-sm text-muted-foreground">Belum ada acara yang tersedia saat ini.</p>
+            </div>
         </div>
     </section>
 </template>

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { X, Star, Upload, ImagePlus, Send } from 'lucide-vue-next'
-import { optionLabel, optionImageUrl, type FieldOptionEntry } from '@/components/modules/builder/fieldMapping'
+import { optionLabel, type FieldOptionEntry } from '@/components/modules/builder/fieldMapping'
 import { normalizeBannerSrc } from '@/components/modules/builder/formBanner'
 import PageHeader from '@/components/modules/dashboard/PageHeader.vue'
 import { Button } from '@/components/ui/button'
@@ -243,32 +243,31 @@ function ratingStars(field: FormPreviewField): number[] {
                                                 tabindex="-1"
                                             />
 
-                                            <Select
-                                                v-else-if="field.type === 'dropdown'"
-                                                :model-value="undefined"
-                                                disabled
-                                            >
-                                                <SelectTrigger class="pointer-events-none text-sm opacity-90">
-                                                    <SelectValue placeholder="Choose an option" />
-                                                </SelectTrigger>
-                                                <SelectContent class="z-[200]">
-                                                    <SelectItem
+                                            <div v-else-if="field.type === 'dropdown'" class="space-y-2">
+                                                <Select :model-value="undefined">
+                                                    <SelectTrigger class="text-sm opacity-90">
+                                                        <SelectValue placeholder="Choose an option" />
+                                                    </SelectTrigger>
+                                                    <SelectContent class="z-[200]">
+                                                        <SelectItem
+                                                            v-for="(opt, oi) in optionEntries(field)"
+                                                            :key="optKey(opt, oi)"
+                                                            :value="optionLabel(opt) || `option-${oi + 1}`"
+                                                        >
+                                                            <span class="py-0.5">{{ optionLabel(opt) || `Option ${oi + 1}` }}</span>
+                                                        </SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                                <div class="space-y-1.5 rounded-xl border border-border/70 bg-muted/20 p-2">
+                                                    <div
                                                         v-for="(opt, oi) in optionEntries(field)"
-                                                        :key="optKey(opt, oi)"
-                                                        :value="optionLabel(opt)"
+                                                        :key="`dropdown-preview-${optKey(opt, oi)}`"
+                                                        class="flex items-center gap-2 rounded-lg border border-border/60 bg-card px-2.5 py-1.5 text-xs"
                                                     >
-                                                        <span class="flex items-center gap-2.5 py-0.5">
-                                                            <img
-                                                                v-if="optionImageUrl(opt)"
-                                                                :src="choiceThumb(optionImageUrl(opt)!)"
-                                                                alt=""
-                                                                class="size-7 shrink-0 rounded-md border border-border object-cover"
-                                                            />
-                                                            <span>{{ optionLabel(opt) }}</span>
-                                                        </span>
-                                                    </SelectItem>
-                                                </SelectContent>
-                                            </Select>
+                                                        <span>{{ optionLabel(opt) || `Option ${oi + 1}` }}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
 
                                             <div v-else-if="field.type === 'radio'" class="flex flex-col gap-2">
                                                 <label

@@ -54,9 +54,6 @@ const previewSrc = () => normalizeBannerSrc(props.modelValue.bannerUrl)
     <div class="flex flex-col gap-3 rounded-xl border border-border bg-muted/30 p-3.5">
         <div>
             <p class="text-xs font-semibold text-foreground">Banner form</p>
-            <p class="mt-0.5 text-[10px] leading-relaxed text-muted-foreground">
-                Tampil di paling atas (sebelum judul). Hanya pembuat form yang mengisinya — bukan kolom pengisian peserta.
-            </p>
         </div>
 
         <div class="flex flex-col gap-1.5">
@@ -67,38 +64,11 @@ const previewSrc = () => normalizeBannerSrc(props.modelValue.bannerUrl)
                 class="text-xs"
                 @change="onBannerFile"
             />
-            <p class="text-[10px] text-muted-foreground">PNG, JPG, JPEG, GIF. Disimpan sebagai data URL bersama formulir Anda.</p>
+            <p class="text-[10px] text-muted-foreground">PNG, JPG, JPEG</p>
             <p v-if="bannerUploadError" class="text-[10px] font-semibold text-destructive">{{ bannerUploadError }}</p>
         </div>
 
-        <div class="flex flex-col gap-1.5">
-            <Label class="text-xs font-semibold">Atau URL gambar / GIF</Label>
-            <Input
-                :model-value="modelValue.bannerUrl.startsWith('data:') ? '' : modelValue.bannerUrl"
-                placeholder="https://… atau jalur ke /storage/…"
-                class="text-xs"
-                @update:model-value="
-                    (v) =>
-                        patch({
-                            bannerUrl: String(v ?? ''),
-                            bannerFileName: '',
-                        })
-                "
-            />
-            <p class="text-[10px] text-muted-foreground">Jika pakai upload di atas, isian URL bisa dikosongkan.</p>
-        </div>
-
-        <div class="flex flex-col gap-1.5">
-            <Label class="text-xs font-semibold">Keterangan (opsional)</Label>
-            <Textarea
-                :model-value="modelValue.caption"
-                placeholder="Teks singkat di bawah banner"
-                rows="2"
-                class="text-xs"
-                @update:model-value="(v) => patch({ caption: String(v ?? '') })"
-            />
-        </div>
-
+        
         <Button
             v-if="modelValue.bannerUrl.trim() !== '' || modelValue.bannerFileName.trim() !== ''"
             variant="outline"

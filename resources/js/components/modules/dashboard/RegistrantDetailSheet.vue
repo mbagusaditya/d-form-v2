@@ -37,6 +37,10 @@ const emit = defineEmits<{
                     <div class="min-w-0 flex-1">
                         <p class="truncate text-sm font-semibold text-foreground">{{ registrant.user.name }}</p>
                         <p class="truncate text-xs text-muted-foreground">{{ registrant.user.email }}</p>
+                        <p class="mt-1 text-xs text-muted-foreground">
+                            Formulir:
+                            <span class="font-medium text-foreground">{{ registrant.form.title }}</span>
+                        </p>
                     </div>
                     <span
                         :class="[

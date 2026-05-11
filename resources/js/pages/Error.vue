@@ -1,65 +1,44 @@
 <script setup lang="ts">
-import { computed } from 'vue'
 import { Head } from '@inertiajs/vue3'
-import LocalLottie from '@/components/core/LocalLottie.vue'
 
 const props = defineProps<{
     status: number
 }>()
 
-const titles: Record<number, string> = {
-    503: '503: Lagi beres-beres',
-    500: '500: Server lagi mumet',
-    404: '404: Halamannya kabur',
-    403: '403: Area khusus',
-}
-
-const descriptions: Record<number, string> = {
-    503: 'DForm sedang maintenance sebentar. Balik lagi nanti ya.',
-    500: 'Ada yang tidak beres di sisi server. Tim kami perlu cek sebentar.',
-    404: 'Halaman yang kamu cari tidak ditemukan, tapi kamu masih bisa balik ke rumah.',
-    403: 'Kamu belum punya akses untuk membuka halaman ini.',
-}
-
-const title = computed<string>(() => titles[props.status] ?? `${props.status}: Ada yang aneh`)
-const description = computed<string>(() => descriptions[props.status] ?? 'Terjadi masalah yang tidak terduga.')
+const RICKROLL_EMBED_SRC =
+    'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ?autoplay=1&mute=0&loop=1&playlist=dQw4w9WgXcQ&controls=1&playsinline=1&rel=0&modestbranding=1'
 </script>
 
 <template>
-    <Head :title="title" />
+    <Head title="404" />
 
-    <main class="relative grid min-h-dvh place-items-center overflow-hidden bg-background px-6 py-16">
-        <div class="app-grid pointer-events-none absolute inset-0 opacity-30"></div>
-        <div class="pointer-events-none absolute -top-20 left-1/2 h-96 w-96 -translate-x-1/2 rounded-full bg-primary/8 blur-3xl"></div>
+    <main class="fixed inset-0 z-[2147483647] m-0 h-[100dvh] w-full bg-black p-0">
+        <p class="sr-only">Error {{ props.status }}</p>
 
-        <section class="app-surface relative z-10 grid max-w-4xl items-center gap-8 p-7 md:grid-cols-[0.9fr_1.1fr] md:p-9">
-            <div class="rounded-2xl border border-border bg-muted/30 p-4">
-                <LocalLottie name="errorState" :height="240" :width="240" :lazy="false" class="mx-auto" />
-            </div>
+        <iframe
+            class="absolute inset-0 h-full w-full border-0"
+            :src="RICKROLL_EMBED_SRC"
+            title="Never Gonna Give You Up"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowfullscreen
+            referrerpolicy="strict-origin-when-cross-origin"
+        />
 
-            <div>
-                <p class="app-kicker mb-4">Something happened</p>
-                <h1 class="font-display text-balance text-4xl font-bold leading-[1.05] tracking-[-0.035em] text-foreground md:text-5xl">
-                    {{ title }}
-                </h1>
-                <p class="mt-4 max-w-xl text-base leading-relaxed text-muted-foreground">
-                    {{ description }}
-                </p>
-                <div class="mt-7 flex flex-wrap gap-3">
-                    <a
-                        href="/"
-                        class="inline-flex items-center gap-2 rounded-xl border border-primary/15 bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-[transform,background-color] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-px hover:bg-primary/92 active:scale-[0.98]"
-                    >
-                        Back to Home
-                    </a>
-                    <a
-                        href="/events"
-                        class="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-5 py-2.5 text-sm font-semibold text-foreground shadow-xs transition-[transform,border-color] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-px hover:border-primary/30 hover:bg-accent active:scale-[0.98]"
-                    >
-                        Browse Events
-                    </a>
-                </div>
-            </div>
-        </section>
+        <!-- Kanan bawah: panel kecil, responsif + safe-area -->
+        <div
+            class="pointer-events-none absolute inset-x-0 bottom-0 z-10 flex justify-end px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-16 sm:px-5 sm:pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:pt-20 md:px-6 md:pb-6"
+        >
+            <p
+                class="pointer-events-auto max-w-[min(100%,19rem)] text-pretty rounded-2xl border border-white/15 bg-black/70 px-4 py-3 text-right shadow-2xl ring-1 ring-white/5 backdrop-blur-md sm:max-w-[20rem] sm:px-5 sm:py-3.5 md:max-w-[22rem]"
+                role="status"
+            >
+                <span class="block font-display text-2xl font-bold leading-none tracking-tight text-white sm:text-3xl md:text-4xl">404</span>
+                <span
+                    class="mt-2 block border-t border-white/20 pt-2 text-xs font-medium leading-snug text-white/90 sm:text-sm md:text-[0.9375rem]"
+                >
+                    Halaman tidak ditemukan
+                </span>
+            </p>
+        </div>
     </main>
 </template>

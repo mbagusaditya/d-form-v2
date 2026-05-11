@@ -1,12 +1,53 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import LocalLottie from '@/components/core/LocalLottie.vue'
+import { FileSpreadsheet, Bell, Webhook, Code2, Link2, Share2 } from 'lucide-vue-next'
+import type { Component } from 'vue'
+
+interface Integration {
+    icon: Component
+    title: string
+    desc: string
+}
+
+const integrations: Integration[] = [
+    {
+        icon: FileSpreadsheet,
+        title: 'Ekspor CSV & Excel',
+        desc: 'Unduh data peserta dalam format spreadsheet yang langsung bisa diolah.',
+    },
+    {
+        icon: Bell,
+        title: 'Notifikasi Real-time',
+        desc: 'Dapatkan pemberitahuan setiap kali ada pendaftar baru masuk.',
+    },
+    {
+        icon: Link2,
+        title: 'Shareable Link',
+        desc: 'Bagikan link formulir langsung ke WhatsApp, Instagram, atau platform lain.',
+    },
+    {
+        icon: Share2,
+        title: 'Embed Formulir',
+        desc: 'Sematkan formulir ke website organisasi Anda dengan kode embed sederhana.',
+    },
+    {
+        icon: Webhook,
+        title: 'Webhook',
+        desc: 'Hubungkan ke sistem eksternal dengan webhook untuk otomasi alur kerja.',
+    },
+    {
+        icon: Code2,
+        title: 'API Access',
+        desc: 'Akses data pendaftaran secara programatik untuk integrasi custom.',
+    },
+]
 
 const visible = ref(false)
 onMounted(() => {
     const obs = new IntersectionObserver(
         ([e]) => { if (e?.isIntersecting) { visible.value = true; obs.disconnect() } },
-        { threshold: 0.12 },
+        { threshold: 0.1 },
     )
     const el = document.getElementById('features-integrations')
     if (el) obs.observe(el)
@@ -14,32 +55,56 @@ onMounted(() => {
 </script>
 
 <template>
-    <section id="features-integrations" class="border-t border-border/30 py-20 md:py-28">
-        <div class="mx-auto max-w-5xl px-5 lg:px-8">
-            <div class="grid items-center gap-10 lg:grid-cols-2 lg:gap-14">
+    <section id="features-integrations" class="py-24 md:py-32">
+        <div class="mx-auto max-w-7xl px-6 lg:px-10">
+            <div class="grid items-center gap-14 lg:grid-cols-2 lg:gap-20">
+                <!-- Lottie -->
                 <div
-                    :class="['transition-all duration-600', visible ? 'translate-y-0 opacity-100' : 'translate-y-6 opacity-0']"
+                    :class="[
+                        'transition-all duration-600',
+                        visible ? 'translate-y-0 opacity-100' : 'translate-y-6 opacity-0',
+                    ]"
                 >
-                    <div class="rounded-xl border border-border/40 bg-card/50 p-5 sm:p-7">
-                        <LocalLottie name="docsFlow" :height="220" width="100%" />
+                    <div class="overflow-hidden rounded-2xl border border-border/30 bg-gradient-to-b from-card to-muted/20 p-6 shadow-sm sm:p-8">
+                        <LocalLottie name="featuresIntegrations" :height="300" width="100%" />
                     </div>
                 </div>
+
+                <!-- Text content -->
                 <div
-                    :class="['transition-all delay-75 duration-600', visible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0']"
+                    :class="[
+                        'transition-all delay-75 duration-600',
+                        visible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0',
+                    ]"
                 >
-                    <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">Integrasi</p>
-                    <h2 class="mt-2 text-[1.5rem] font-semibold tracking-tight text-foreground sm:text-[1.75rem]">
-                        Terhubung dengan alur kerja Anda
+                    <p class="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Integrasi & Konektivitas</p>
+                    <h2 class="mt-3 font-display text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+                        Terhubung dengan alur kerja yang sudah Anda gunakan
                     </h2>
-                    <p class="mt-3 text-[13px] leading-relaxed text-muted-foreground sm:text-[14px]">
-                        DForm terintegrasi dengan sistem yang sudah Anda gunakan — dari ekspor data ke spreadsheet hingga notifikasi otomatis.
+                    <p class="mt-4 text-base leading-relaxed text-muted-foreground">
+                        DForm tidak berdiri sendiri — platform ini dirancang untuk bekerja bersama
+                        tools dan workflow yang sudah ada di organisasi Anda.
                     </p>
-                    <ul class="mt-5 flex flex-col gap-2.5">
-                        <li v-for="p in ['Ekspor ke CSV dan Excel', 'Notifikasi pendaftaran baru', 'Webhook untuk sistem eksternal', 'API untuk custom integration']" :key="p" class="flex items-start gap-2.5 text-[13px] text-foreground/85">
-                            <span class="mt-[7px] size-1 shrink-0 rounded-full bg-primary" />
-                            {{ p }}
-                        </li>
-                    </ul>
+
+                    <div class="mt-8 grid gap-5 sm:grid-cols-2">
+                        <div
+                            v-for="(item, i) in integrations"
+                            :key="item.title"
+                            :class="[
+                                'flex gap-3.5 transition-all duration-400',
+                                visible ? 'translate-y-0 opacity-100' : 'translate-y-3 opacity-0',
+                            ]"
+                            :style="{ transitionDelay: `${150 + i * 60}ms` }"
+                        >
+                            <div class="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                                <component :is="item.icon" class="size-4" />
+                            </div>
+                            <div>
+                                <h4 class="text-sm font-semibold text-foreground">{{ item.title }}</h4>
+                                <p class="mt-0.5 text-xs leading-relaxed text-muted-foreground">{{ item.desc }}</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

@@ -22,8 +22,6 @@ export function useDashboardEventShowPage(
 
     const showDeleteModal = ref(false)
     const showRestoreModal = ref(false)
-    const showImportModal = ref(false)
-    const importFile = ref<File | null>(null)
     const isDeleting = ref(false)
     const isRestoring = ref(false)
 
@@ -84,22 +82,6 @@ export function useDashboardEventShowPage(
         })
     }
 
-    function handleExport(format: string) {
-        toast.info(`${format} export is not implemented yet — use CSV from the Reports page or Data card.`)
-    }
-
-    function handleImportFileChange(e: Event) {
-        const input = e.target as HTMLInputElement
-        if (input.files?.[0]) importFile.value = input.files[0]
-    }
-
-    function handleImport() {
-        if (!importFile.value) { toast.error('Please select a file.'); return }
-        toast.success(`Importing ${importFile.value.name}...`)
-        importFile.value = null
-        showImportModal.value = false
-    }
-
     const cardShadow = 'shadow-sm'
 
     return {
@@ -108,8 +90,6 @@ export function useDashboardEventShowPage(
         totalRegistrants,
         showDeleteModal,
         showRestoreModal,
-        showImportModal,
-        importFile,
         isDeleting,
         isRestoring,
         fillPercent,
@@ -122,9 +102,6 @@ export function useDashboardEventShowPage(
         formatDateTime,
         handleDelete,
         handleRestore,
-        handleExport,
-        handleImportFileChange,
-        handleImport,
         cardShadow,
     }
 }

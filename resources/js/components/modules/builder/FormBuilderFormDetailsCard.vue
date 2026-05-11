@@ -115,13 +115,6 @@ function vString(v: unknown): string {
         </div>
 
         <div class="border-border space-y-4 border-t pt-5">
-            <div>
-                <h4 class="text-foreground text-sm font-semibold">Registration</h4>
-                <p class="text-muted-foreground mt-1 text-xs leading-relaxed">
-                    Used for team and bundle flows (M4b/M4c). Whether the leader counts toward max team size is enforced
-                    at registration time—document your convention for organizers here if needed.
-                </p>
-            </div>
             <div class="space-y-2">
                 <Label :for="`${idPrefix}-reg-mode`" class="text-sm font-medium">Registration mode</Label>
                 <select

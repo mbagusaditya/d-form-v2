@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input'
 import { DatePicker } from '@/components/ui/date-picker'
 import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { StyledSelect } from '@/components/ui/styled-select'
 import type { UnwrapNestedRefs } from 'vue'
 import { Star, ImagePlus, Upload, X } from 'lucide-vue-next'
 import type { FormFillPageContext } from '@/utils/composables/useFormFillPage'
@@ -75,6 +75,7 @@ const showDescription = computed(() => {
 function fillReady(): boolean {
     return props.imageUploadFillReadyFn(props.storageKey)
 }
+
 </script>
 
 <template>
@@ -188,36 +189,17 @@ function fillReady(): boolean {
             </label>
         </div>
 
-        <Select v-else-if="ctx.builderType(field) === 'dropdown' || field.type === 'select'" v-model="ctx.answerForm[storageKey]">
-            <SelectTrigger>
-                <SelectValue placeholder="Select an option">
-                    <template v-if="ctx.answerForm[storageKey]">
-                        <span class="flex items-center gap-2">
-                            <img
-                                v-if="ctx.getSelectedOptionRow(field, storageKey)?.imageSrc"
-                                :src="ctx.getSelectedOptionRow(field, storageKey)?.imageSrc"
-                                alt=""
-                                class="size-6 rounded border border-border object-cover"
-                            />
-                            {{ ctx.answerForm[storageKey] }}
-                        </span>
-                    </template>
-                </SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-                <SelectItem v-for="row in ctx.getOptionRows(field)" :key="row.label" :value="row.label">
-                    <span class="flex items-center gap-2">
-                        <img
-                            v-if="row.imageSrc"
-                            :src="row.imageSrc"
-                            alt=""
-                            class="size-7 rounded border border-border object-cover"
-                        />
-                        {{ row.label }}
-                    </span>
-                </SelectItem>
-            </SelectContent>
-        </Select>
+        <StyledSelect
+            v-else-if="
+                (ctx.builderType(field) === 'dropdown' || field.type === 'select') && !ctx.isMultipleSelect(field)
+            "
+            :id="storageKey"
+            :model-value="textAnswer(storageKey)"
+            :options="ctx.getOptionRows(field)"
+            :placeholder="ctx.getPlaceholder(field) || 'Select an option'"
+            class="min-h-11 h-11"
+            @update:model-value="setTextAnswer(storageKey, $event)"
+        />
 
         <div
             v-else-if="['file_upload', 'image_upload', 'fileUpload'].includes(ctx.builderType(field))"

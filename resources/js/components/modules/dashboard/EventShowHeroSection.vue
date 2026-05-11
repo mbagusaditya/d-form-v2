@@ -1,12 +1,9 @@
 <script setup lang="ts">
-import { Link } from '@inertiajs/vue3'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Pencil, Sparkles, Users, CalendarDays, MapPin } from 'lucide-vue-next'
+import { CalendarDays, MapPin } from 'lucide-vue-next'
 import { categoryColorMap, categoryLabelMap, formatDate } from '@/lib/dummyData'
 import { parseEventCategories } from '@/lib/eventShowUi'
 import EventBannerImage from '@/components/modules/dashboard/EventBannerImage.vue'
-import { edit as editEvent } from '@/actions/App/Http/Controllers/Dashboard/Events/EventController'
 
 type StatusPill = { label: string; classes: string }
 

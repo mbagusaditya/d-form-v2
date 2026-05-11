@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import {
-    Pencil, Trash2, RotateCcw, Download, Upload, QrCode, FileText, Users, FileSpreadsheet,
+    Pencil, Trash2, RotateCcw, Download, QrCode, FileText, Users, FileSpreadsheet, BarChart3,
 } from 'lucide-vue-next'
 import { edit as editEvent } from '@/actions/App/Http/Controllers/Dashboard/Events/EventController'
 
@@ -15,11 +15,11 @@ defineProps<{
     cardShadow: string
     registrationsCsvHref: string
     attendanceCsvHref: string
+    /** URL halaman laporan & log kehadiran untuk acara ini. */
+    laporanHref?: string | null
 }>()
 
 defineEmits<{
-    exportExcel: []
-    openImport: []
     openArchive: []
     openRestore: []
 }>()
@@ -40,6 +40,9 @@ defineEmits<{
                 </Button>
                 <Button variant="outline" class="w-full justify-start rounded-xl" as-child>
                     <Link :href="`/admin/dashboard/events/${event.id}/registrants`"><Users class="mr-2 size-4" />Manage registrants</Link>
+                </Button>
+                <Button v-if="laporanHref" variant="outline" class="w-full justify-start rounded-xl" as-child>
+                    <Link :href="laporanHref"><BarChart3 class="mr-2 size-4" />Laporan dan log kehadiran</Link>
                 </Button>
             </CardContent>
         </Card>
@@ -67,17 +70,6 @@ defineEmits<{
                         <TooltipContent>Export attendance scan log (CSV)</TooltipContent>
                     </Tooltip>
                 </div>
-                <Tooltip>
-                    <TooltipTrigger as-child>
-                        <Button variant="outline" size="sm" class="w-full justify-start rounded-xl" @click="$emit('exportExcel')">
-                            <FileSpreadsheet class="mr-2 size-4" />Excel export
-                        </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Excel export not implemented yet.</TooltipContent>
-                </Tooltip>
-                <Button variant="outline" size="sm" class="w-full justify-start rounded-xl" @click="$emit('openImport')">
-                    <Upload class="mr-2 size-4" />Import registrants
-                </Button>
             </CardContent>
         </Card>
 

@@ -15,9 +15,7 @@ import {
     Users,
     Send,
     Mail,
-    Server,
-    ArrowRight,
-    Sparkles,
+    MailOpen,
 } from 'lucide-vue-next'
 import {
     formatDate,
@@ -36,6 +34,8 @@ defineOptions({ layout: DashboardLayout })
 const props = defineProps<{
     event: IEvent
     isRegistered: boolean
+    /** Undangan tim/bundle: belum accept/reject — bukan peserta resmi sampai dikonfirmasi */
+    pendingTeamInvitationUrl?: string | null
     registrationStatus: 'pending' | 'accepted' | 'rejected' | null
     qr_base64: string | null
     registration_code: string | null
@@ -117,6 +117,13 @@ const quotaPercent = computed(() => {
                             :style="{ backgroundColor: categoryColorMap[cat] ?? '#6B7280' }"
                         >
                             {{ categoryLabelMap[cat] ?? cat }}
+                        </Badge>
+                        <Badge
+                            v-if="pendingTeamInvitationUrl"
+                            variant="secondary"
+                            class="border border-amber-500/50 bg-amber-500/20 text-[10px] font-semibold text-amber-950 backdrop-blur-sm dark:text-amber-50"
+                        >
+                            Diundang · menunggu Anda
                         </Badge>
                         <Badge variant="secondary" class="text-[10px] font-semibold capitalize backdrop-blur-sm">
                             {{ registrationStatusLabel[event.registration_status] }}
@@ -204,7 +211,19 @@ const quotaPercent = computed(() => {
                             </p>
                         </div>
 
-                        <div v-if="!isRegistered && event.registration_status === 'open'">
+                        <div v-if="pendingTeamInvitationUrl" class="flex flex-col gap-3">
+                            <p class="text-xs leading-relaxed text-muted-foreground">
+                                Anda diundang sebagai anggota tim atau paket pendaftaran. Belum tercatat sebagai peserta hingga Anda
+                                menyetujui undangan di tautan berikut.
+                            </p>
+                            <Button class="h-11 w-full rounded-xl text-[15px] font-semibold shadow-sm" as-child>
+                                <Link :href="pendingTeamInvitationUrl">
+                                    <MailOpen class="mr-2 size-4" aria-hidden="true" />
+                                    Lihat undangan
+                                </Link>
+                            </Button>
+                        </div>
+                        <div v-else-if="!isRegistered && event.registration_status === 'open'">
                             <Button class="h-11 w-full rounded-xl text-[15px] font-semibold shadow-sm" as-child>
                                 <Link :href="`/user/dashboard/events/${event.slug}/register`">
                                     <Send class="mr-2 size-4" aria-hidden="true" />

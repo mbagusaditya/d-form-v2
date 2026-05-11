@@ -9,6 +9,8 @@ use Illuminate\Http\Exceptions\ThrottleRequestsException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
+use Symfony\Component\HttpFoundation\Response;
+use Throwable;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -18,6 +20,19 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->redirectGuestsTo(fn () => route('auth.login'));
+
+        $middleware->redirectUsersTo(function () {
+            /** @var \App\Models\User|null $user */
+            $user = auth()->user();
+
+            if ($user === null) {
+                return '/';
+            }
+
+            return $user->can('events.list')
+                ? route('dashboard.home', absolute: false)
+                : route('dashboard.user.events', absolute: false);
+        });
 
         $middleware->web(append: [
             HandleInertiaRequests::class
@@ -51,5 +66,31 @@ return Application::configure(basePath: dirname(__DIR__))
             }
 
             return response()->json(['message' => $e->getMessage()], 409);
+        });
+
+        $exceptions->respond(function (Response $response, Throwable $exception, Request $request) {
+            if ($request->expectsJson()) {
+                return $response;
+            }
+
+            $status = $response->getStatusCode();
+
+            if ($status === 419) {
+                if ($request->header('X-Inertia')) {
+                    return redirect()
+                        ->back()
+                        ->with('message', 'Halaman kedaluwarsa, silakan coba lagi.');
+                }
+
+                return $response;
+            }
+
+            if (! in_array($status, [403, 404, 429, 500, 502, 503], true)) {
+                return $response;
+            }
+
+            return Inertia::render('Error', ['status' => $status])
+                ->toResponse($request)
+                ->setStatusCode($status);
         });
     })->create();

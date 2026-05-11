@@ -80,6 +80,9 @@ const breadcrumbs = computed<{ label: string; href?: string }[]>(() => {
                 } else if (sub === 'scan') {
                     crumbs.push({ label: eventTitle, href: eventHref });
                     crumbs.push({ label: 'Check-in' });
+                } else if (sub === 'laporan') {
+                    crumbs.push({ label: eventTitle, href: eventHref });
+                    crumbs.push({ label: 'Laporan' });
                 } else {
                     crumbs.push({ label: eventTitle });
                 }
@@ -88,7 +91,7 @@ const breadcrumbs = computed<{ label: string; href?: string }[]>(() => {
     }
 
     if (pathSegments[0] === 'user' && pathSegments[1] === 'dashboard') {
-        crumbs.push({ label: 'Acara saya', href: '/user/dashboard' });
+        crumbs.push({ label: 'Acara diikuti', href: '/user/dashboard' });
         if (pathSegments[2] === 'events' && pathSegments[3] && pathSegments[3] !== 'forms') {
             crumbs.push({ label: pageProps.value.event?.title ?? 'Detail acara' });
         }

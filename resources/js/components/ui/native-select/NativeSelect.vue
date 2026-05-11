@@ -2,7 +2,7 @@
 import type { AcceptableValue } from "reka-ui"
 import type { HTMLAttributes } from "vue"
 import { reactiveOmit, useVModel } from "@vueuse/core"
-import { ChevronDownIcon } from "lucide-vue-next"
+import { ChevronDown } from "lucide-vue-next"
 import { cn } from "@/lib/utils"
 
 defineOptions({
@@ -25,7 +25,7 @@ const delegatedProps = reactiveOmit(props, "class")
 
 <template>
   <div
-    class="group/native-select relative w-fit has-[select:disabled]:opacity-50"
+    class="group/native-select relative w-full min-w-0 has-[select:disabled]:opacity-50"
     data-slot="native-select-wrapper"
   >
     <select
@@ -33,16 +33,21 @@ const delegatedProps = reactiveOmit(props, "class")
       v-model="modelValue"
       data-slot="native-select"
       :class="cn(
-        'border-input placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 dark:hover:bg-input/50 h-9 w-full min-w-0 appearance-none rounded-md border bg-transparent px-3 py-2 pr-9 text-sm shadow-xs transition-[color,box-shadow] outline-none disabled:pointer-events-none disabled:cursor-not-allowed',
-        'focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]',
-        'aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive',
+        'h-10 min-h-10 w-full min-w-0 cursor-pointer appearance-none rounded-xl border border-input bg-card px-3 py-2 pr-9 text-left text-sm font-medium text-foreground shadow-xs ring-offset-background',
+        'transition-[border-color,box-shadow] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)]',
+        'placeholder:text-muted-foreground',
+        'hover:border-primary/30',
+        'focus:outline-none focus:border-ring focus:ring-[3px] focus:ring-ring/30',
+        'disabled:cursor-not-allowed disabled:pointer-events-none disabled:opacity-50',
+        'aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40',
+        'selection:bg-primary selection:text-primary-foreground',
         props.class,
       )"
     >
       <slot />
     </select>
-    <ChevronDownIcon
-      class="text-muted-foreground pointer-events-none absolute top-1/2 right-3.5 size-4 -translate-y-1/2 opacity-50 select-none"
+    <ChevronDown
+      class="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground opacity-50 select-none"
       aria-hidden="true"
       data-slot="native-select-icon"
     />

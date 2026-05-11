@@ -2,17 +2,19 @@
 
 use App\Enums\EventStatus;
 use App\Enums\FormAnswerReviewStatus;
+use App\Enums\MemberConfirmationStatus;
+use App\Enums\RegistrationRole;
 use App\Http\Controllers\Dashboard\Events\AttendanceScanController;
 use App\Http\Controllers\Dashboard\Events\EventRegistrantsController;
 use App\Http\Controllers\Dashboard\User\TeamInvitationController;
 use App\Http\Controllers\Dashboard\User\UserEventRegistrationController;
 use App\Http\Controllers\Dashboard\User\UserEventRegistrationFormPickerController;
 use App\Models\Event;
+use App\Models\FormAnswer;
 use App\Services\Event\EventService;
 use App\Services\Event\UserPortalEventResolver;
 use App\Services\Registration\RegistrationQrPngGenerator;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Dashboard\EventReportingController;
 use App\Http\Controllers\Dashboard\Events\Exports\EventAttendanceCsvExportController;
 use App\Http\Controllers\Dashboard\Events\Exports\EventRegistrationsCsvExportController;
 use App\Http\Controllers\Dashboard\HomeController as DashboardHomeController;
@@ -31,17 +33,66 @@ Route::permanentRedirect('/dashboard/user/events', '/user/dashboard');
 
 Route::middleware('auth')->get('/dashboard/profile', fn () => inertia('Dashboard/Profile'))->name('dashboard.profile');
 Route::middleware(['auth', 'throttle:10,1'])->patch('/dashboard/profile', [ProfileController::class, 'update'])->name('dashboard.profile.update');
+Route::middleware(['auth', 'throttle:10,1'])->post('/dashboard/profile/avatar', [ProfileController::class, 'updateAvatar'])->name('dashboard.profile.avatar.update');
+Route::middleware(['auth', 'throttle:10,1'])->delete('/dashboard/profile/avatar', [ProfileController::class, 'destroyAvatar'])->name('dashboard.profile.avatar.destroy');
 Route::middleware(['auth', 'throttle:10,1'])->put('/dashboard/profile/password', [ProfileController::class, 'updatePassword'])->name('dashboard.profile.password.update');
 Route::middleware(['auth', 'organizer'])->prefix('/admin/dashboard')->group(function () {
     Route::get('/', DashboardHomeController::class)->name('dashboard.home');
-    Route::get('/reports', EventReportingController::class)->name('dashboard.reports.index');
+    Route::get('/reports', fn () => redirect()->route('dashboard.events.index'))->name('dashboard.reports.index');
     Route::get('/recruitment', fn () => inertia('Dashboard/Recruitment/Index'))->name('dashboard.recruitment.index');
 });
 
-Route::middleware('auth')->get('/user/dashboard/profile', fn () => inertia('Dashboard/Profile'))->name('dashboard.profile');
+Route::middleware('auth')->get('/user/dashboard/profile', fn () => inertia('Dashboard/Profile'))->name('dashboard.user.profile');
 
 Route::middleware(['auth', 'member_portal'])->prefix('/user/dashboard')->name('dashboard.user.')->group(function () {
+    Route::get('/overview', fn () => inertia('Dashboard/User/Index'))->name('overview');
+
     Route::get('/', function (EventService $eventService) {
+        $userId = auth()->id();
+        $events = Event::query()
+            ->where('status', EventStatus::Published)
+            ->whereHas('forms', function ($q) use ($userId): void {
+                $q->whereHas('formAnswers', function ($aq) use ($userId): void {
+                    $aq->where('user_id', $userId)
+                        ->excludeTerminatedInvitationMembers();
+                });
+            })
+            ->orderByDesc('start_date')
+            ->get();
+
+        $pendingInviteRows = FormAnswer::query()
+            ->join('forms', 'forms.id', '=', 'form_answers.form_id')
+            ->where('form_answers.user_id', $userId)
+            ->where('form_answers.registration_role', RegistrationRole::Member->value)
+            ->where('form_answers.member_confirmation_status', MemberConfirmationStatus::Pending->value)
+            ->whereNotNull('form_answers.invitation_token')
+            ->select(['form_answers.invitation_token', 'forms.event_id'])
+            ->get();
+
+        $inviteUrlByEventId = [];
+        foreach ($pendingInviteRows as $row) {
+            $inviteUrlByEventId[$row->event_id] = route('dashboard.user.team-invitations.show', ['token' => $row->invitation_token], false);
+        }
+
+        $payload = $events
+            ->map(function (Event $e) use ($eventService, $inviteUrlByEventId): array {
+                $data = $eventService->eventToInertiaArray($e);
+                if (isset($inviteUrlByEventId[$e->id])) {
+                    $data['pending_team_invitation_url'] = $inviteUrlByEventId[$e->id];
+                }
+
+                return $data;
+            })
+            ->values()
+            ->all();
+
+        return inertia('Dashboard/User/Events', [
+            'events' => $payload,
+            'listMode' => 'mine',
+        ]);
+    })->name('events');
+
+    Route::get('/events/browse', function (EventService $eventService) {
         $events = Event::query()
             ->where('status', EventStatus::Published)
             ->orderByDesc('start_date')
@@ -52,8 +103,9 @@ Route::middleware(['auth', 'member_portal'])->prefix('/user/dashboard')->name('d
 
         return inertia('Dashboard/User/Events', [
             'events' => $events,
+            'listMode' => 'browse',
         ]);
-    })->name('events');
+    })->name('events.browse');
 
     Route::get('/events/{event_segment}/registration', UserEventRegistrationController::class)
         ->name('events.registration');
@@ -74,7 +126,7 @@ Route::middleware(['auth', 'member_portal'])->prefix('/user/dashboard')->name('d
         $event = app(UserPortalEventResolver::class)->resolvePublished($event_segment);
 
         $user = auth()->user();
-        $registration = \App\Models\FormAnswer::query()
+        $registration = FormAnswer::query()
             ->where('user_id', $user->id)
             ->whereHas('form', function ($q) use ($event) {
                 $q->where('event_id', $event->id);
@@ -83,9 +135,20 @@ Route::middleware(['auth', 'member_portal'])->prefix('/user/dashboard')->name('d
             ->orderByDesc('created_at')
             ->first();
 
+        $hasPendingTeamInvitation = $registration?->isMemberPendingInvitation() ?? false;
+        $pendingTeamInvitationUrl = null;
+        if ($hasPendingTeamInvitation) {
+            $token = $registration->invitation_token;
+            if (is_string($token) && $token !== '') {
+                $pendingTeamInvitationUrl = route('dashboard.user.team-invitations.show', ['token' => $token], false);
+            }
+        }
+
+        $isPortalRegistered = (bool) $registration && ! $hasPendingTeamInvitation;
+
         $qrBase64 = null;
         $registrationCode = null;
-        if ($registration && $registration->review_status === FormAnswerReviewStatus::Accepted) {
+        if ($isPortalRegistered && $registration->review_status === FormAnswerReviewStatus::Accepted) {
             $registrationCode = $registration->registration_code;
             $png = $qrGenerator->pngForSubmission($registration->id);
             $qrBase64 = base64_encode($png);
@@ -93,8 +156,9 @@ Route::middleware(['auth', 'member_portal'])->prefix('/user/dashboard')->name('d
 
         return inertia('Dashboard/User/EventDetail', [
             'event' => $eventService->eventToInertiaArray($event),
-            'isRegistered' => (bool) $registration,
-            'registrationStatus' => $registration?->review_status?->value,
+            'isRegistered' => $isPortalRegistered,
+            'pendingTeamInvitationUrl' => $pendingTeamInvitationUrl,
+            'registrationStatus' => $isPortalRegistered ? $registration?->review_status?->value : null,
             'qr_base64' => $qrBase64,
             'registration_code' => $registrationCode,
         ]);

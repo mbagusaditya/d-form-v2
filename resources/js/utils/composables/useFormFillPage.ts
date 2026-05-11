@@ -2,7 +2,7 @@ import { computed, onBeforeUnmount, reactive } from 'vue'
 import { useForm } from '@inertiajs/vue3'
 import { normalizeBannerSrc, pickFormBannerField } from '@/components/modules/builder/formBanner'
 import { getFormFieldOptionRows } from '@/lib/formFieldOptions'
-import { readFieldMetadata, readFieldRules } from '@/lib/formFieldMetadata'
+import { readFieldMetadata, readFieldRules, readMetaBoolean } from '@/lib/formFieldMetadata'
 import type {
     FormAccessStatus,
     FormFillOptionRow,
@@ -96,7 +96,7 @@ export function useFormFillPage(props: {
     const initialValues: Record<string, FormFillAnswerValue | string[]> = {}
     for (const field of props.fields) {
         if (isDisplayOnly(field)) continue
-        if (field.type === 'checkbox' || (field.type === 'select' && metadata(field).is_multiple)) {
+        if (field.type === 'checkbox' || (field.type === 'select' && readMetaBoolean(metadata(field), 'is_multiple'))) {
             initialValues[field.name] = []
         } else if (field.type === 'fileUpload') {
             initialValues[field.name] = null
@@ -115,7 +115,7 @@ export function useFormFillPage(props: {
             if (metadata(field).duplicatable !== true) continue
             for (let i = 0; i < props.memberSlots; i++) {
                 const key = `bundle__${field.name}__${i}`
-                if (field.type === 'checkbox' || (field.type === 'select' && metadata(field).is_multiple)) {
+                if (field.type === 'checkbox' || (field.type === 'select' && readMetaBoolean(metadata(field), 'is_multiple'))) {
                     initialValues[key] = []
                 } else if (field.type === 'fileUpload') {
                     initialValues[key] = null
@@ -191,7 +191,7 @@ export function useFormFillPage(props: {
     }
 
     function isMultipleSelect(field: IFormField): boolean {
-        return Boolean(metadata(field).is_multiple)
+        return readMetaBoolean(metadata(field), 'is_multiple')
     }
 
     function isRadioLike(field: IFormField): boolean {

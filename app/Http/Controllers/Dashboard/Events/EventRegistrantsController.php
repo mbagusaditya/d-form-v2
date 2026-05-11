@@ -12,30 +12,41 @@ use Inertia\Response;
 
 class EventRegistrantsController extends Controller
 {
-    /**
-     * Primary registration form for the event: first form ordered by title,
-     * matching the behaviour on {@see routes/web/admin/index.php} register redirect.
-     */
     public function __invoke(Event $event, EventService $eventService): Response
     {
         $this->authorize('view', $event);
 
-        $form = Form::query()
+        $forms = Form::query()
             ->where('event_id', $event->id)
             ->orderBy('title')
-            ->first();
+            ->get(['id', 'title']);
+
+        $formSummaries = $forms
+            ->map(fn (Form $form): array => [
+                'id' => $form->id,
+                'title' => $form->title,
+            ])
+            ->values()
+            ->all();
+
+        $formIds = $forms->pluck('id')->all();
 
         $registrants = [];
-        if ($form !== null) {
+        if ($formIds !== []) {
             $registrants = FormAnswer::query()
-                ->with(['user:id,name,email'])
-                ->where('form_id', $form->id)
+                ->with(['user:id,name,email', 'form:id,title'])
+                ->whereIn('form_id', $formIds)
+                ->whereListedForOrganizerParticipantRoster()
                 ->orderByDesc('created_at')
                 ->get()
                 ->filter(fn (FormAnswer $row): bool => $row->user !== null)
                 ->map(fn (FormAnswer $row): array => [
                     'id' => $row->id,
-                    'form_id' => $form->id,
+                    'form_id' => $row->form_id,
+                    'form' => [
+                        'id' => $row->form_id,
+                        'title' => $row->form?->title ?? '',
+                    ],
                     'user' => [
                         'id' => $row->user->id,
                         'name' => $row->user->name,
@@ -55,10 +66,8 @@ class EventRegistrantsController extends Controller
 
         return Inertia::render('Dashboard/Events/Registrants', [
             'event' => $eventService->eventToInertiaArray($event),
+            'forms' => $formSummaries,
             'registrants' => $registrants,
-            'registrationForm' => $form !== null
-                ? ['id' => $form->id, 'title' => $form->title]
-                : null,
         ]);
     }
 

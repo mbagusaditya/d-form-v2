@@ -8,7 +8,6 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Progress } from '@/components/ui/progress'
 import { Search, MapPin, CalendarDays, Users } from 'lucide-vue-next'
 import { formatDate, categoryLabelMap, categoryColorMap } from '@/lib/dummyData'
@@ -17,23 +16,30 @@ import EventBannerImage from '@/components/modules/dashboard/EventBannerImage.vu
 
 defineOptions({ layout: DashboardLayout })
 
-const props = defineProps<{
-    events: IEvent[]
-}>()
+const props = withDefaults(
+    defineProps<{
+        events: IEvent[]
+        listMode?: 'mine' | 'browse'
+    }>(),
+    { listMode: 'browse' },
+)
 
 const searchQuery = ref('')
 const filterCategory = ref('all')
-const activeTab = ref('all')
 
-const allEvents = computed(() => props.events)
+const isBrowse = computed(() => props.listMode === 'browse')
+
+const pageTitle = computed(() => (isBrowse.value ? 'Jelajah acara' : 'Acara diikuti'))
+const pageSubtitle = computed(() =>
+    isBrowse.value
+        ? 'Lihat semua acara terpublikasi dan daftar sebagai peserta.'
+        : 'Acara yang Anda daftar atau ikuti (tim / undangan yang masih aktif).',
+)
+
+const headTitle = computed(() => (isBrowse.value ? 'Jelajah acara' : 'Acara diikuti'))
 
 const filteredEvents = computed(() => {
-    let list = allEvents.value
-
-    if (activeTab.value === 'joined') {
-        // TODO: filter by joined events when backend provides user registration data
-        list = list.filter(() => false)
-    }
+    let list = props.events
 
     if (searchQuery.value.trim()) {
         const q = searchQuery.value.toLowerCase()
@@ -42,37 +48,39 @@ const filteredEvents = computed(() => {
     if (filterCategory.value !== 'all') list = list.filter((e) => toCategoryList(e.category).includes(filterCategory.value))
     return list
 })
+
+const emptyTitle = computed(() =>
+    isBrowse.value ? 'Tidak ada acara ditemukan' : 'Belum ada acara yang diikuti',
+)
+const emptyDescription = computed(() =>
+    isBrowse.value
+        ? 'Sesuaikan pencarian atau filter kategori.'
+        : 'Telusuri acara terbuka dan daftar untuk melihatnya di sini.',
+)
 </script>
 
 <template>
-    <Head title="All Events" />
+    <Head :title="headTitle" />
 
     <div class="flex flex-col gap-6">
-        <PageHeader title="All Events" subtitle="Browse and register for upcoming events." />
+        <PageHeader :title="pageTitle" :subtitle="pageSubtitle" />
 
         <div class="flex flex-wrap items-center gap-3 rounded-xl border border-border/60 bg-muted/30 p-3 shadow-xs">
             <div class="relative w-full max-w-xs">
                 <Search class="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                <Input v-model="searchQuery" placeholder="Search events..." class="pl-9" />
+                <Input v-model="searchQuery" placeholder="Cari acara…" class="pl-9" />
             </div>
             <Select v-model="filterCategory">
-                <SelectTrigger class="h-9 w-36 text-xs"><SelectValue placeholder="Category" /></SelectTrigger>
+                <SelectTrigger class="h-9 w-36 text-xs"><SelectValue placeholder="Kategori" /></SelectTrigger>
                 <SelectContent>
-                    <SelectItem value="all">All Categories</SelectItem>
+                    <SelectItem value="all">Semua kategori</SelectItem>
                     <SelectItem value="rkt">RKT</SelectItem>
                     <SelectItem value="non-rkt">NON RKT</SelectItem>
                     <SelectItem value="recruitment">Recruitment</SelectItem>
-                    <SelectItem value="etc">Etc</SelectItem>
+                    <SelectItem value="etc">Lainnya</SelectItem>
                 </SelectContent>
             </Select>
         </div>
-
-        <Tabs v-model="activeTab">
-            <TabsList>
-                <TabsTrigger value="all">All Events</TabsTrigger>
-                <TabsTrigger value="joined">Joined</TabsTrigger>
-            </TabsList>
-        </Tabs>
 
         <div v-if="filteredEvents.length > 0" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <Link
@@ -88,6 +96,13 @@ const filteredEvents = computed(() => {
                         </div>
                         <div class="pointer-events-none absolute inset-0 z-1 bg-linear-to-t from-black/35 via-transparent to-transparent" />
                         <div class="absolute left-2.5 top-2.5 z-2 flex flex-wrap gap-1.5">
+                            <Badge
+                                v-if="!isBrowse && event.pending_team_invitation_url"
+                                variant="secondary"
+                                class="border border-amber-500/40 bg-amber-500/15 text-[10px] font-semibold text-amber-950 shadow-xs dark:text-amber-100"
+                            >
+                                Diundang
+                            </Badge>
                             <Badge
                                 v-for="cat in toCategoryList(event.category)"
                                 :key="cat"
@@ -106,7 +121,7 @@ const filteredEvents = computed(() => {
                         </div>
                         <div class="mt-3">
                             <div class="mb-1.5 flex items-center justify-between text-xs">
-                                <span class="flex items-center gap-1 text-muted-foreground"><Users class="size-3" />Spots</span>
+                                <span class="flex items-center gap-1 text-muted-foreground"><Users class="size-3" />Kuota</span>
                                 <span class="font-medium tabular-nums">{{ event.registered_count }}/{{ event.quota }}</span>
                             </div>
                             <Progress :model-value="event.registered_count" :max="event.quota" class="h-1.5" />
@@ -116,6 +131,19 @@ const filteredEvents = computed(() => {
             </Link>
         </div>
 
-        <EmptyState v-else title="No events found" description="Try adjusting your search or filters." animation-url="https://lottie.host/4e039bf3-670e-4a0f-8a6c-1bee793bfc23/JkaGBMIxOz.json" />
+        <EmptyState
+            v-else
+            :title="emptyTitle"
+            :description="emptyDescription"
+            animation-url="https://lottie.host/4e039bf3-670e-4a0f-8a6c-1bee793bfc23/JkaGBMIxOz.json"
+        >
+            <Link
+                v-if="!isBrowse"
+                href="/user/dashboard/events/browse"
+                class="text-primary text-sm font-medium underline-offset-4 hover:underline"
+            >
+                Jelajah semua acara
+            </Link>
+        </EmptyState>
     </div>
 </template>

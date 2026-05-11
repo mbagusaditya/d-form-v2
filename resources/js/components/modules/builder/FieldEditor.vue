@@ -56,7 +56,18 @@ const newOption = ref('')
 
 function optionRows(): FieldOptionEntry[] {
     const raw = props.field.options
-    return Array.isArray(raw) ? (raw as FieldOptionEntry[]) : []
+    if (!Array.isArray(raw)) return []
+    const rows = raw as FieldOptionEntry[]
+    // Dropdown is intentionally text-only to avoid unstable image option rendering.
+    if (props.field.type === 'dropdown') {
+        return rows.map((row, i) => ({
+            ...row,
+            type: 'text',
+            imageUrl: '',
+            label: String(row.label ?? '').trim() || `Option ${i + 1}`,
+        }))
+    }
+    return rows
 }
 
 function emitOptions(next: FieldOptionEntry[]) {
@@ -76,6 +87,7 @@ function removeOption(index: number) {
 }
 
 function toggleOptionType(index: number) {
+    if (props.field.type === 'dropdown') return
     const opts = [...optionRows()]
     const cur = opts[index]
     opts[index] = { ...cur, type: cur.type === 'text' ? 'image' : 'text' }
@@ -84,7 +96,8 @@ function toggleOptionType(index: number) {
 
 function setOptionLabel(index: number, label: string) {
     const opts = [...optionRows()]
-    opts[index] = { ...opts[index], label: label.trim() }
+    const next = label.trim()
+    opts[index] = { ...opts[index], label: next || `Option ${index + 1}` }
     emitOptions(opts)
 }
 
@@ -224,7 +237,11 @@ const hasAdvancedFlags = computed(
         <div v-if="hasOptions" class="flex flex-col gap-2">
             <Label class="text-xs font-semibold">Options</Label>
             <p class="text-[10px] text-muted-foreground">
-                Define the choices available. Each option can be text-only or image-only.
+                {{
+                    field.type === 'dropdown'
+                        ? 'Define text choices for the dropdown.'
+                        : 'Define the choices available. Each option can be text-only or image-only.'
+                }}
             </p>
             <div class="flex flex-col gap-2">
                 <div
@@ -239,6 +256,7 @@ const hasAdvancedFlags = computed(
                                     Option {{ i + 1 }} — {{ opt.type }}
                                 </span>
                                 <button
+                                    v-if="field.type !== 'dropdown'"
                                     type="button"
                                     @click="toggleOptionType(i)"
                                     class="text-[9px] font-bold text-primary underline-offset-2 hover:underline"

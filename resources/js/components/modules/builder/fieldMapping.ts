@@ -16,27 +16,32 @@ export function optionImageUrl(entry: FieldOptionEntry): string | undefined {
 }
 
 function serializeOptionChoices(options: readonly FieldOptionEntry[]): Record<string, unknown>[] {
-    return options.map(o => ({
-        id: o.id,
-        type: o.type,
-        label: o.label,
-        imageUrl: o.imageUrl ?? ''
-    }))
+    return options.map((o, i) => {
+        const label = String(o.label ?? '').trim()
+        return {
+            id: o.id,
+            type: o.type,
+            // Select item value must never be empty.
+            label: label || `Option ${i + 1}`,
+            imageUrl: o.imageUrl ?? ''
+        }
+    })
 }
 
 function parseOptionChoices(raw: unknown): FieldOptionEntry[] | null {
     if (!Array.isArray(raw)) return null
     const out: FieldOptionEntry[] = []
-    for (const item of raw) {
+    for (const [i, item] of raw.entries()) {
         if (item && typeof item === 'object' && item !== null) {
             const row = item as Record<string, unknown>
             const id = String(row.id ?? crypto.randomUUID())
             const type = row.type === 'image' ? 'image' : 'text'
             const label = String(row.label ?? '').trim()
             const imageUrl = String(row.imageUrl ?? '').trim()
-            out.push({ id, type, label, imageUrl })
+            out.push({ id, type, label: label || `Option ${i + 1}`, imageUrl })
         } else if (typeof item === 'string') {
-            out.push({ id: crypto.randomUUID(), type: 'text', label: item.trim() })
+            const label = item.trim()
+            out.push({ id: crypto.randomUUID(), type: 'text', label: label || `Option ${i + 1}` })
         }
     }
     return out.length > 0 ? out : null
@@ -77,7 +82,12 @@ export function toBackendField(f: BuilderField, order: number): BackendField {
         case 'paragraph':  return { ...base, type: 'textarea', metadata: withMeta(f, { placeholder: '', rules: {}, builderType: 'paragraph', content: (f.metadata?.content as string) || '' }) }
 
         case 'dropdown': {
-            const choices = serializeOptionChoices(f.options || [])
+            const choices = serializeOptionChoices((f.options || []).map((opt, i) => ({
+                ...opt,
+                type: 'text',
+                imageUrl: '',
+                label: String(opt.label ?? '').trim() || `Option ${i + 1}`,
+            })))
             const inCsv = choices.map((c) => c.label).join(',')
             return {
                 ...base,
@@ -169,7 +179,7 @@ export function fromBackendField(bf: BackendField): BuilderField {
     const bt = (m.builderType as string) || guessType(bf.type, m)
     const inStr = (rules.in as string) || ''
     const parsedChoices = parseOptionChoices(m.optionChoices)
-    const opts: FieldOptionEntry[] =
+    const optsRaw: FieldOptionEntry[] =
         parsedChoices ??
         (['dropdown', 'checkbox', 'radio'].includes(bt)
             ? inStr
@@ -178,6 +188,15 @@ export function fromBackendField(bf: BackendField): BuilderField {
                   .filter(Boolean)
                   .map((label) => ({ id: crypto.randomUUID(), type: 'text' as const, label }))
             : [])
+    const opts: FieldOptionEntry[] =
+        bt === 'dropdown'
+            ? optsRaw.map((opt, i) => ({
+                  ...opt,
+                  type: 'text',
+                  imageUrl: '',
+                  label: String(opt.label ?? '').trim() || `Option ${i + 1}`,
+              }))
+            : optsRaw
 
     return {
         id: bf.id,

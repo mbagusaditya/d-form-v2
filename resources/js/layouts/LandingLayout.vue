@@ -6,7 +6,7 @@ import Footer from '@/components/modules/landing/Footer.vue';
 <template>
     <div class="relative min-h-screen bg-background font-sans antialiased">
         <Navbar />
-        <main class="relative">
+        <main>
             <slot />
         </main>
         <Footer />
