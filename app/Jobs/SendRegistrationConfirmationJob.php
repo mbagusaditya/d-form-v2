@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Jobs\Concerns\AppliesOutgoingEmailDelay;
 use App\Enums\EmailLogStatus;
 use App\Enums\EmailNotificationType;
+use App\Enums\FormAnswerReviewStatus;
 use App\Enums\RegistrationRole;
 use App\Mail\RegistrationConfirmationMail;
 use App\Models\EmailLog;
@@ -75,7 +76,10 @@ class SendRegistrationConfirmationJob implements ShouldQueue
         $answersSummary = $summarizer->summarize($submission);
 
         $isTeamOrBundleLeader = $submission->registration_role === RegistrationRole::Leader;
-        $qrPng = $isTeamOrBundleLeader
+        $isAccepted = $submission->review_status === FormAnswerReviewStatus::Accepted;
+        
+        // Only generate QR code for accepted submissions (except team/bundle leaders)
+        $qrPng = ($isTeamOrBundleLeader || ! $isAccepted)
             ? null
             : $qrGenerator->pngForSubmission($submission->id);
 

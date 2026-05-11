@@ -5,6 +5,7 @@ namespace App\Mail;
 use App\Models\FormAnswer;
 use App\Support\RegistrationPortalLinks;
 use Illuminate\Mail\Mailable;
+use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
@@ -40,9 +41,20 @@ class RegistrationAcceptedMail extends Mailable
                 'form' => $this->submission->form,
                 'user' => $this->submission->user,
                 'registrationCode' => $this->registrationCode,
-                'qrBase64' => base64_encode($this->qrPngBinary),
                 'registrationDetailsUrl' => RegistrationPortalLinks::registrationDetailsUrl($this->submission->form->event),
             ],
         );
+    }
+
+    /**
+     * @return array<int, Attachment>
+     */
+    public function attachments(): array
+    {
+        return [
+            Attachment::fromData(fn () => $this->qrPngBinary, 'qr-code.png')
+                ->withMime('image/png')
+                ->as('qr-code.png'),
+        ];
     }
 }
