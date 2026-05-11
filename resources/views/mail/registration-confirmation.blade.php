@@ -81,7 +81,7 @@
                         <td style="padding:24px 24px;">
                             <p style="margin:0 0 8px;font-size:13px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#6b7280;">{{ __('Attendance QR code') }}</p>
                             <p style="margin:0 0 18px;font-size:14px;line-height:1.55;color:#6b7280;">{{ __('This QR is tied to your submission. Present it for check-in at the event.') }}</p>
-                            <img src="data:image/png;base64,{{ $qrBase64 }}" alt="{{ __('Attendance QR code') }}" width="240" height="240" style="display:block;margin:0 auto;border:1px solid #e5e7eb;border-radius:12px;background-color:#ffffff;">
+                            <img src="cid:qr-code.png" alt="{{ __('Attendance QR code') }}" width="240" height="240" style="display:block;margin:0 auto;border:1px solid #e5e7eb;border-radius:12px;background-color:#ffffff;">
                             <p style="margin:16px 0 0;font-size:12px;color:#9ca3af;">{{ __('Submission ID') }}: {{ $submission->id }}</p>
                         </td>
                     </tr>

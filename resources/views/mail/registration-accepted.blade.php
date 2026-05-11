@@ -41,7 +41,7 @@
                     <td style="padding:24px 24px;">
                         <p style="margin:0 0 8px;font-size:13px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#6b7280;">{{ __('Attendance QR code') }}</p>
                         <p style="margin:0 0 18px;font-size:14px;line-height:1.55;color:#6b7280;">{{ __('Show this at check-in for') }} {{ $event->title }}</p>
-                        <img src="data:image/png;base64,{{ $qrBase64 }}" alt="{{ __('Attendance QR code') }}" width="240" height="240" style="display:block;margin:0 auto;border:1px solid #e5e7eb;border-radius:12px;background-color:#ffffff;">
+                        <img src="cid:qr-code.png" alt="{{ __('Attendance QR code') }}" width="240" height="240" style="display:block;margin:0 auto;border:1px solid #e5e7eb;border-radius:12px;background-color:#ffffff;">
                         <p style="margin:24px 0 8px;font-size:13px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#6b7280;">{{ __('Manual registration code') }}</p>
                         <p style="margin:0 0 10px;font-size:14px;color:#6b7280;line-height:1.55;">{{ __('If scanning fails, tell staff this code:') }}</p>
                         <p style="margin:0;padding:14px 18px;font-size:22px;font-weight:700;letter-spacing:0.06em;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:#111827;background-color:#ffffff;border-radius:10px;border:1px dashed #e5e7eb;">{{ $registrationCode }}</p>

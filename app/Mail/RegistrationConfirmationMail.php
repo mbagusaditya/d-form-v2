@@ -6,6 +6,7 @@ use App\Models\FormAnswer;
 use App\Models\User;
 use App\Support\RegistrationPortalLinks;
 use Illuminate\Mail\Mailable;
+use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
@@ -58,11 +59,30 @@ class RegistrationConfirmationMail extends Mailable
                 'user' => $greetingUser,
                 'answersSummary' => $this->answersSummary,
                 'showAttendanceQr' => $showAttendanceQr,
-                'qrBase64' => $showAttendanceQr ? base64_encode($this->qrPngBinary) : null,
                 'registrationDetailsUrl' => RegistrationPortalLinks::registrationDetailsUrl($this->submission->form->event),
                 'isTeammateConfirmedLeaderNotice' => $this->isTeammateConfirmedLeaderNotice,
                 'teammateUser' => $this->submission->user,
             ],
         );
+    }
+
+    /**
+     * @return array<int, Attachment>
+     */
+    public function attachments(): array
+    {
+        $showAttendanceQr = ! $this->isTeammateConfirmedLeaderNotice
+            && $this->qrPngBinary !== null
+            && $this->qrPngBinary !== '';
+
+        if (! $showAttendanceQr) {
+            return [];
+        }
+
+        return [
+            Attachment::fromData(fn () => $this->qrPngBinary, 'qr-code.png')
+                ->withMime('image/png')
+                ->as('qr-code.png'),
+        ];
     }
 }
