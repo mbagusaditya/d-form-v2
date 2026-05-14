@@ -39,7 +39,9 @@ services:
       - redis_data:/data
     networks:
       - d-form-network
-    command: redis-server --appendonly yes
+    # AOF (appendonly) handles persistence; disable RDB write-block so a failed
+    # RDB snapshot does not block all write commands (stop-writes-on-bgsave-error).
+    command: redis-server --appendonly yes --stop-writes-on-bgsave-error no
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s

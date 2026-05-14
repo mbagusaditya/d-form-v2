@@ -22,6 +22,9 @@ FROM dunglas/frankenphp:1-php8.4-alpine
 WORKDIR /app
 
 # Install PHP extensions
+# Note: redis is installed separately via pecl because install-php-extensions
+# fails to fetch the redis package info from the PECL REST registry in some
+# environments (FrankenPHP 1.x Alpine). Other extensions use ipe as normal.
 RUN install-php-extensions \
     pcntl \
     zip \
@@ -29,9 +32,23 @@ RUN install-php-extensions \
     intl \
     imagick \
     pdo_mysql \
-    redis \
     gd \
     opcache
+
+# Install redis extension directly from GitHub source.
+# PECL REST registry is unreachable during build in this environment,
+# so we download the phpredis tarball from GitHub and compile manually.
+RUN apk add --no-cache --virtual .redis-build-deps autoconf gcc g++ make linux-headers wget \
+    && wget -qO /tmp/phpredis.tar.gz \
+        https://github.com/phpredis/phpredis/archive/refs/tags/6.1.0.tar.gz \
+    && tar -xzf /tmp/phpredis.tar.gz -C /tmp \
+    && cd /tmp/phpredis-6.1.0 \
+    && phpize \
+    && ./configure \
+    && make -j$(nproc) install \
+    && docker-php-ext-enable redis \
+    && rm -rf /tmp/phpredis.tar.gz /tmp/phpredis-6.1.0 \
+    && apk del .redis-build-deps
 
 # Install Composer (needed for dump-autoload in this stage)
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
