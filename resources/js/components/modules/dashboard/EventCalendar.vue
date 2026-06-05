@@ -6,8 +6,25 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ChevronLeft, ChevronRight, MapPin, CalendarDays, ArrowRight } from 'lucide-vue-next';
-import { dummyEvents, categoryColorMap, categoryLabelMap, formatDate } from '@/lib/dummyData';
+import { categoryColorMap, categoryLabelMap, formatDate } from '@/lib/dummyData';
 import { toCategoryList, primaryCategory } from '@/lib/eventCategories';
+
+interface CalendarEvent {
+    id: string | number
+    title: string
+    start_date: string
+    end_date: string | null
+    category: string | string[] | null
+    href: string
+}
+
+interface Props {
+    events?: CalendarEvent[]
+}
+
+const props = withDefaults(defineProps<Props>(), {
+    events: () => []
+})
 
 const today = new Date();
 const currentMonth = ref(today.getMonth());
@@ -16,7 +33,7 @@ const filterCategory = ref('all');
 const viewMode = ref<'month' | 'week'>('month');
 const currentWeekStart = ref(getWeekStart(today));
 
-const selectedEvent = ref<(typeof dummyEvents)[0] | null>(null);
+const selectedEvent = ref<CalendarEvent | null>(null);
 const showEventDialog = ref(false);
 
 const monthNamesId = [
@@ -75,7 +92,7 @@ function goToday() {
     currentWeekStart.value = getWeekStart(today);
 }
 
-function onEventClick(event: (typeof dummyEvents)[0]) {
+function onEventClick(event: CalendarEvent) {
     selectedEvent.value = event;
     showEventDialog.value = true;
 }
@@ -85,7 +102,7 @@ function toDateStr(d: Date): string {
 }
 
 const filteredEvents = computed(() => {
-    let events = dummyEvents.filter((e) => !e.deleted_at);
+    let events = props.events.filter((e) => e.start_date && e.end_date);
     if (filterCategory.value !== 'all')
         events = events.filter((e) => toCategoryList(e.category).includes(filterCategory.value));
     return events;
@@ -96,7 +113,7 @@ const calendarWeeks = computed(() => {
     const daysInMonth = new Date(currentYear.value, currentMonth.value + 1, 0).getDate();
     const prevMonthDays = new Date(currentYear.value, currentMonth.value, 0).getDate();
 
-    const cells: { day: number; date: Date; isCurrentMonth: boolean; isToday: boolean; events: typeof dummyEvents }[] =
+    const cells: { day: number; date: Date; isCurrentMonth: boolean; isToday: boolean; events: CalendarEvent[] }[] =
         [];
 
     for (let i = firstDay - 1; i >= 0; i--) {
@@ -401,7 +418,7 @@ const legendEntries = computed(() =>
                 </div>
                 <Button variant="default" size="sm" class="mt-2 w-full rounded-xl" as-child>
                     <Link
-                        :href="`/admin/dashboard/events/${selectedEvent.id}`"
+                        :href="selectedEvent.href"
                         class="inline-flex items-center justify-center gap-2"
                     >
                         Buka detail acara

@@ -24,9 +24,11 @@ Route::middleware('auth')->get('/admin', fn () => to_route('dashboard.home'));
 
 /** Dasbor utama — admin ke area organizer, member ke overview peserta. */
 Route::middleware('auth')->get('/dashboard', function () {
-    return auth()->user()->can('events.list')
-        ? redirect()->route('dashboard.home')
-        : inertia('Dashboard/User/Index');
+    if (auth()->user()->can('events.list')) {
+        return redirect()->route('dashboard.home');
+    }
+    
+    return app(\App\Http\Controllers\Dashboard\User\MemberDashboardController::class)();
 })->name('dashboard.user.overview');
 
 Route::permanentRedirect('/dashboard/user/events', '/events/joined');

@@ -1,5 +1,10 @@
 /**
  * Centralized dummy data for dashboard mockup.
+ * 
+ * ⚠️ DEPRECATION WARNING:
+ * This file contains dummy data for development, testing, and Storybook purposes only.
+ * Production code should NOT use this data. Real data should come from backend API/controllers.
+ * 
  * Replace with real API data when backend is wired.
  */
 

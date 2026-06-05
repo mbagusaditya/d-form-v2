@@ -8,15 +8,35 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { CalendarDays, Zap, Clock, MapPin, ArrowRight } from 'lucide-vue-next'
-import { dummyEvents, formatDate, categoryLabelMap, categoryColorMap } from '@/lib/dummyData'
+import { formatDate, categoryLabelMap, categoryColorMap } from '@/lib/dummyData'
 import { toCategoryList } from '@/lib/eventCategories'
 
 defineOptions({ layout: DashboardLayout })
 
-const upcomingEvents = dummyEvents
-    .filter((e) => e.status === 'published' && !e.deleted_at && new Date(e.start_date) > new Date())
-    .slice(0, 3)
-</script>
+interface Props {
+    stats: {
+        eventsJoined: number
+        upcomingEvents: number
+        pendingRegistrations: number
+        acceptedRegistrations: number
+    }
+    upcomingEvents: IEvent[]
+    pendingInvitations: Array<{
+        event: IEvent
+        invitationUrl: string
+    }>
+    calendarEvents: Array<{
+        id: string | number
+        title: string
+        start_date: string
+        end_date: string | null
+        category: string | string[] | null
+        href: string
+    }>
+}
+
+const props = defineProps<Props>()
+
 
 <template>
     <Head title="My Dashboard" />
@@ -25,9 +45,9 @@ const upcomingEvents = dummyEvents
         <PageHeader title="My Dashboard" subtitle="Overview of your event participation." />
 
         <div class="grid gap-4 sm:grid-cols-3">
-            <KpiCard label="Events Joined" :value="3" :trend="20" :icon="CalendarDays" color="primary" />
-            <KpiCard label="Upcoming Events" :value="upcomingEvents.length" :trend="0" :icon="Zap" color="warning" />
-            <KpiCard label="Pending Registrations" :value="1" :trend="-10" :icon="Clock" color="destructive" />
+            <KpiCard label="Events Joined" :value="props.stats.eventsJoined" :trend="20" :icon="CalendarDays" color="primary" />
+            <KpiCard label="Upcoming Events" :value="props.stats.upcomingEvents" :trend="0" :icon="Zap" color="warning" />
+            <KpiCard label="Pending Registrations" :value="props.stats.pendingRegistrations" :trend="-10" :icon="Clock" color="destructive" />
         </div>
 
         <Card class="rounded-xl border shadow-xs">
@@ -39,7 +59,7 @@ const upcomingEvents = dummyEvents
             </CardHeader>
             <CardContent class="flex flex-col gap-3 pt-0">
                 <Link
-                    v-for="event in upcomingEvents"
+                    v-for="event in props.upcomingEvents"
                     :key="event.id"
                         :href="`/events/joined/events/${event.slug}`"
                     class="flex items-center gap-4 rounded-lg border p-3 transition-colors hover:bg-muted/30"
@@ -65,12 +85,12 @@ const upcomingEvents = dummyEvents
                         </Badge>
                     </div>
                 </Link>
-                <p v-if="upcomingEvents.length === 0" class="py-4 text-center text-sm text-muted-foreground">
+                <p v-if="props.upcomingEvents.length === 0" class="py-4 text-center text-sm text-muted-foreground">
                     No upcoming events. Browse events to find something interesting!
                 </p>
             </CardContent>
         </Card>
 
-        <EventCalendar />
+        <EventCalendar :events="props.calendarEvents" />
     </div>
 </template>
