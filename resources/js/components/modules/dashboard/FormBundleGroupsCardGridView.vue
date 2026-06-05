@@ -78,16 +78,16 @@ function isLeader(member: IBundleSubmissionMember) {
 </script>
 
 <template>
-    <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+    <div class="grid grid-cols-1 items-start gap-5 sm:grid-cols-2 lg:grid-cols-3">
         <article
             v-for="(group, idx) in bundleGroups"
             :key="group.group_token"
-            class="animate-app-fade-in border-border/80 bg-card hover:border-border flex flex-col overflow-hidden rounded-2xl border shadow-sm transition-all duration-300 hover:shadow-md"
+            class="animate-app-fade-in border-border/80 bg-card hover:border-border flex h-auto flex-col self-start overflow-hidden rounded-2xl border shadow-sm transition-all duration-300 hover:shadow-md"
             :class="isExpanded(group.group_token) ? 'border-primary/30 ring-primary/15 ring-1' : ''"
             :style="{ animationDelay: `${idx * 70}ms` }"
         >
             <section
-                class="hover:bg-muted/[0.06] focus-visible:ring-ring flex w-full flex-1 flex-col p-5 text-left transition-colors focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-inset"
+                class="hover:bg-muted/[0.06] focus-visible:ring-ring flex w-full flex-col p-5 text-left transition-colors focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-inset"
             >
                 <div class="flex items-start justify-between gap-3">
                     <div class="min-w-0 space-y-1">
@@ -154,8 +154,8 @@ function isLeader(member: IBundleSubmissionMember) {
             </div>
 
             <div
-                class="grid transition-[grid-template-rows] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
-                :class="isExpanded(group.group_token) ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'"
+                class="grid h-auto transition-[grid-template-rows] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
+                :class="isExpanded(group.group_token) ? 'grid-rows-[1fr] h-auto' : 'grid-rows-[0fr] h-auto'"
             >
                 <div class="overflow-hidden">
                     <div class="border-border/60 bg-muted/[0.05] space-y-2 border-t px-4 py-4">
@@ -248,7 +248,7 @@ function isLeader(member: IBundleSubmissionMember) {
                                                 {{ member.reviewer.name }}
                                             </dd>
                                         </div>
-                                        <div class="flex justify-between text-primary gap-3">
+                                        <div class="text-primary flex justify-between gap-3">
                                             <dt>Klik untuk melihat detail</dt>
                                         </div>
                                     </dl>
