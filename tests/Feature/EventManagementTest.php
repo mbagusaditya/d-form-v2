@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\EventStatus;
 use App\Models\Event;
 use App\Models\User;
 use Database\Seeders\RoleSeeder;
@@ -35,6 +36,46 @@ class EventManagementTest extends TestCase
         $this->actingAs($member)
             ->get(route('dashboard.events.index'))
             ->assertRedirect(route('dashboard.user.events'));
+    }
+
+    public function test_member_can_view_joined_events_portal(): void
+    {
+        $member = User::factory()->create();
+        $member->assignRole('member');
+
+        $this->actingAs($member)
+            ->get(route('dashboard.user.events'))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Dashboard/User/Events')
+                ->where('listMode', 'mine')
+            );
+    }
+
+    public function test_events_joined_url_resolves_to_member_portal_route(): void
+    {
+        $route = app('router')->getRoutes()->match(
+            \Illuminate\Http\Request::create('/events/joined', 'GET')
+        );
+
+        $this->assertSame('dashboard.user.events', $route->getName());
+    }
+
+    public function test_public_event_detail_includes_member_portal_event_url(): void
+    {
+        $event = Event::factory()->create([
+            'status' => EventStatus::Published,
+            'slug' => 'public-demo-event',
+        ]);
+
+        $this->get(route('events.show', $event->slug))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('EventDetail')
+                ->where('memberPortalEventUrl', route('dashboard.user.events.show', [
+                    'event_segment' => $event->slug,
+                ], false))
+            );
     }
 
     public function test_admin_can_view_events_index(): void

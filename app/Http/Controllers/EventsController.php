@@ -29,8 +29,15 @@ class EventsController extends Controller
     {
         $event = $resolver->resolvePublished($segment);
 
+        $segment = $event->slug !== null && $event->slug !== ''
+            ? $event->slug
+            : (string) $event->getKey();
+
         return inertia('EventDetail', [
             'event' => $eventService->eventToInertiaArray($event),
+            'memberPortalEventUrl' => route('dashboard.user.events.show', [
+                'event_segment' => $segment,
+            ], absolute: false),
         ]);
     }
 }
