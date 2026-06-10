@@ -20,9 +20,7 @@ services:
             - PHP_OPCACHE_REVALIDATE_FREQ=0
             - DB_HOST=db
             - REDIS_HOST=redis
-        dns:
-            - 8.8.8.8
-            - 8.8.4.4
+
         networks:
             - d-form-network
         depends_on:
@@ -71,8 +69,6 @@ services:
     redis:
         container_name: d_form_redis
         image: redis:8.0-alpine
-        ports:
-            - '${REDIS_PORT:-6379}:6379'
         restart: unless-stopped
         volumes:
             - redis_data:/data

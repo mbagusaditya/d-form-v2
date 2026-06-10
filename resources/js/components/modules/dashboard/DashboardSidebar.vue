@@ -330,15 +330,18 @@ const sidebarLogoSrc = `/${encodeURIComponent('DForm 1.png')}`;
                         <span class="text-sm font-medium">Profil & pengaturan</span>
                     </button>
                     <div class="bg-border/80 my-0.5 h-px w-full shrink-0" role="separator" />
-                    <button
+                    <Link
+                        :href="logout().url"
+                        method="post"
+                        as="button"
                         type="button"
                         role="menuitem"
                         class="text-destructive hover:bg-destructive/10 focus-visible:ring-destructive/30 flex w-full cursor-pointer items-center gap-2 rounded-lg px-2 py-2.5 text-left text-sm font-medium outline-none focus-visible:ring-2"
-                        @click="handleLogout"
+                        @click="() => { accountMenuOpen = false; setOpenMobile(false); }"
                     >
                         <LogOut class="size-4 shrink-0" />
                         Keluar
-                    </button>
+                    </Link>
                 </div>
             </Transition>
         </Teleport>

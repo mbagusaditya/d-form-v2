@@ -2,7 +2,7 @@
 import LandingLayout from '@/layouts/LandingLayout.vue';
 import SeoHead from '@/components/seo/SeoHead.vue';
 import { computed, ref, onMounted } from 'vue';
-import { usePage } from '@inertiajs/vue3';
+import { usePage, Link } from '@inertiajs/vue3';
 import { MapPin, CalendarDays, ArrowRight, Check, Shield } from 'lucide-vue-next';
 import { formatDate, categoryLabelMap, categoryColorMap, sessionLabelMap } from '@/lib/dummyData';
 import { toCategoryList } from '@/lib/eventCategories';
@@ -223,15 +223,15 @@ const highlights: string[] = [
                                 </div>
                             </div>
 
-                            <a
-                                href="/auth/register"
+                            <Link
+                                :href="page.props.auth?.user ? `/events/joined/events/${event.slug}` : `/auth/register?intended=/events/joined/events/${event.slug}`"
                                 class="group inline-flex w-full items-center justify-center gap-3 rounded-2xl border border-primary/15 bg-primary px-5 py-3.5 text-sm font-semibold text-primary-foreground shadow-sm transition-[transform,background-color] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-px hover:bg-primary/92 active:scale-[0.98]"
                             >
-                                Register Now
+                                {{ page.props.auth?.user ? 'View Details' : 'Register Now' }}
                                 <span class="grid size-7 place-items-center rounded-full bg-white/15 transition-transform duration-200 group-hover:translate-x-0.5">
                                     <ArrowRight class="size-4" />
                                 </span>
-                            </a>
+                            </Link>
                         </div>
                     </article>
                 </div>
@@ -297,13 +297,13 @@ const highlights: string[] = [
                                         :style="{ width: capacityPercent + '%' }"
                                     />
                                 </div>
-                                <a
-                                    href="/auth/register"
+                                <Link
+                                    :href="page.props.auth?.user ? `/events/joined/events/${event.slug}` : `/auth/register?intended=/events/joined/events/${event.slug}`"
                                     class="border-primary/15 bg-primary text-primary-foreground hover:bg-primary/92 mt-6 flex w-full items-center justify-center gap-2 rounded-xl border px-6 py-3 text-sm font-semibold shadow-sm transition-[transform,background-color] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-px active:scale-[0.98]"
                                 >
-                                    Register Now
+                                    {{ page.props.auth?.user ? 'View Details' : 'Register Now' }}
                                     <ArrowRight class="size-4" />
-                                </a>
+                                </Link>
                             </div>
 
                             <div class="app-surface p-6">

@@ -17,7 +17,9 @@ Route::get('/', function () {
 
 Route::get('/features', FeaturePageController::class)->name('features');
 
-Route::resource('/events', EventsController::class)->only(['index', 'show']);
+Route::resource('/events', EventsController::class)
+    ->only(['index', 'show'])
+    ->where(['event' => '^(?!joined(/|$)).+']);
 
 Route::get('/docs', DocsPageController::class)->name('docs');
 
