@@ -15,6 +15,7 @@ interface CalendarEvent {
     start_date: string
     end_date: string | null
     category: string | string[] | null
+    location?: string | null
     href: string
 }
 
@@ -101,8 +102,10 @@ function toDateStr(d: Date): string {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-const filteredEvents = computed(() => {
-    let events = props.events.filter((e) => e.start_date && e.end_date);
+type CalendarEventWithEnd = CalendarEvent & { end_date: string }
+
+const filteredEvents = computed<CalendarEventWithEnd[]>(() => {
+    let events = props.events.filter((e): e is CalendarEventWithEnd => !!e.start_date && !!e.end_date);
     if (filterCategory.value !== 'all')
         events = events.filter((e) => toCategoryList(e.category).includes(filterCategory.value));
     return events;
@@ -464,9 +467,9 @@ const legendEntries = computed(() =>
             <div v-if="selectedEvent" class="flex flex-col gap-3 pt-1">
                 <div class="text-muted-foreground flex items-start gap-2 text-sm">
                     <CalendarDays class="text-primary mt-0.5 size-4 shrink-0" />
-                    <span> {{ formatDate(selectedEvent.start_date) }} — {{ formatDate(selectedEvent.end_date) }} </span>
+                    <span> {{ formatDate(selectedEvent.start_date) }}<template v-if="selectedEvent.end_date"> — {{ formatDate(selectedEvent.end_date) }}</template> </span>
                 </div>
-                <div class="text-muted-foreground flex items-start gap-2 text-sm">
+                <div v-if="selectedEvent.location" class="text-muted-foreground flex items-start gap-2 text-sm">
                     <MapPin class="text-primary mt-0.5 size-4 shrink-0" />
                     <span>{{ selectedEvent.location }}</span>
                 </div>

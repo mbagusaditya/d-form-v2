@@ -1,17 +1,19 @@
 # Dokumentasi developer — Sapto
 
-Folder ini berisi catatan perubahan dan desain yang dikerjakan oleh **Sapto** pada branch/sesi pengembangan dashboard & UI terkait (sekitar April 2026).
+Folder ini berisi catatan perubahan dan desain yang dikerjakan oleh **Sapto** pada branch/sesi pengembangan dashboard & UI terkait.
 
 ## Isi folder
 
 | File | Deskripsi |
 |------|-----------|
-| [saptoChanges19-04-2026.md](./saptoChanges19-04-2026.md) | Changelog lengkap: backend, frontend, Docker, aset, seed, dan dampak untuk tim |
+| [saptoChanges10-06-2026.md](./saptoChanges10-06-2026.md) | Bundle submissions, member dashboard, reusable routes, re-registrasi, password reset |
+| [saptoChanges04-05-2026.md](./saptoChanges04-05-2026.md) | Konsolidasi M1–M4, hapus Livewire/Filament, publik event dari DB |
+| [saptoChanges19-04-2026.md](./saptoChanges19-04-2026.md) | Dashboard admin, halaman event, landing navbar, data seed, Docker dev |
 
 ## Cara membaca (untuk tim)
 
-1. Buka **`saptoChanges19-04-2026.md`** untuk gambaran menyeluruh: apa yang berubah, file mana yang terdampak, dan bagian mana yang masih mock/placeholder.
-2. Bagian **Ringkasan (TL;DR)** di dokumen tersebut cocok untuk sync singkat.
+1. Buka changelog **terbaru** (`saptoChanges10-06-2026.md`) untuk perubahan terakhir.
+2. Bagian **Ringkasan (TL;DR)** di setiap dokumen cocok untuk sync singkat.
 3. Bagian **Checklist** di akhir dokumen bisa dipakai sebelum merge atau saat onboarding anggota baru.
 
 ## Hubungan dengan dokumen lain
