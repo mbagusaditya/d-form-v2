@@ -22,8 +22,3 @@ Route::resource('/events', EventsController::class)
     ->where(['event' => '^(?!joined(/|$)).+']);
 
 Route::get('/docs', DocsPageController::class)->name('docs');
-
-
-Route::get('/info', function () {
-    die(phpinfo());
-})->name('info');
