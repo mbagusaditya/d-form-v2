@@ -3,8 +3,8 @@
  * Gunakan builder di sini; hindari string path hardcoded di komponen.
  */
 
-const ADMIN_DASHBOARD = '/admin/dashboard'
-const MEMBER_JOINED = '/events/joined'
+const ADMIN_DASHBOARD = '/admin/dashboard';
+const MEMBER_JOINED = '/events/joined';
 
 export const routes = {
     home: '/',
@@ -27,8 +27,7 @@ export const routes = {
         google: '/auth/google',
         github: '/auth/github',
         logout: '/auth/logout',
-        registerWithIntended: (intended: string) =>
-            `/auth/register?intended=${encodeURIComponent(intended)}`,
+        registerWithIntended: (intended: string) => `/auth/login?intended=${encodeURIComponent(intended)}`,
     },
 
     dashboard: {
@@ -52,8 +51,7 @@ export const routes = {
             exports: {
                 registrations: (eventId: string | number) =>
                     `${ADMIN_DASHBOARD}/events/${eventId}/exports/registrations.csv`,
-                attendance: (eventId: string | number) =>
-                    `${ADMIN_DASHBOARD}/events/${eventId}/exports/attendance.csv`,
+                attendance: (eventId: string | number) => `${ADMIN_DASHBOARD}/events/${eventId}/exports/attendance.csv`,
             },
             forms: {
                 index: (eventId: string | number) => `${ADMIN_DASHBOARD}/events/${eventId}/forms`,
@@ -87,52 +85,52 @@ export const routes = {
         party: '/party',
         balloons: '/balloons',
     },
-} as const
+} as const;
 
 export function pathWithoutQuery(url: string): string {
-    return url.split('?')[0] ?? ''
+    return url.split('?')[0] ?? '';
 }
 
 export function isSidebarNavActive(href: string, currentUrl: string): boolean {
-    const path = pathWithoutQuery(currentUrl)
+    const path = pathWithoutQuery(currentUrl);
 
     if (href === routes.admin.index) {
-        return path === routes.admin.index
+        return path === routes.admin.index;
     }
     if (href === routes.dashboard.index) {
-        return path === routes.dashboard.index
+        return path === routes.dashboard.index;
     }
     if (href === routes.member.browse) {
-        return path === routes.member.browse
+        return path === routes.member.browse;
     }
     if (href === routes.member.joined) {
-        return path === routes.member.joined
+        return path === routes.member.joined;
     }
 
-    return path.startsWith(href)
+    return path.startsWith(href);
 }
 
 export function resolveNavbarFallbackBackHref(currentUrl: string): string {
-    const path = pathWithoutQuery(currentUrl)
+    const path = pathWithoutQuery(currentUrl);
 
     if (path.startsWith(routes.admin.events.index) && path !== routes.admin.events.index) {
-        return routes.admin.events.index
+        return routes.admin.events.index;
     }
     if (path.startsWith(routes.admin.index) && path !== routes.admin.index) {
-        return routes.dashboard.index
+        return routes.dashboard.index;
     }
     if (path === routes.dashboard.profile) {
-        return routes.dashboard.index
+        return routes.dashboard.index;
     }
     if (path === routes.member.browse) {
-        return routes.member.joined
+        return routes.member.joined;
     }
     if (path.startsWith(`${routes.member.joined}/events`)) {
-        return routes.member.joined
+        return routes.member.joined;
     }
     if (path.startsWith(routes.member.joined) && path !== routes.member.joined) {
-        return routes.member.joined
+        return routes.member.joined;
     }
 
-    return routes.home
+    return routes.home;
 }

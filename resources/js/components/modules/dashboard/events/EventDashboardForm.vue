@@ -12,6 +12,7 @@ import EventMultiValuePicker from '@/components/modules/dashboard/events/EventMu
 import { Upload, X, Save, Send } from 'lucide-vue-next'
 import { store as storeEvent, update as updateEvent } from '@/actions/App/Http/Controllers/Dashboard/Events/EventController'
 import { showEventValidationToast } from '@/lib/eventValidationToast'
+import { eventHeroBannerContainerClass } from '@/lib/eventBannerAspect'
 import {
     formatIntegerId,
     formatPriceId,
@@ -303,7 +304,7 @@ function submitForm(publish: boolean): void {
                             </span>
                         </div>
                         <div class="overflow-hidden rounded-xl border-2 border-border bg-muted/25 shadow-sm">
-                            <div class="relative aspect-video w-full sm:aspect-[3/1]">
+                            <div :class="eventHeroBannerContainerClass()">
                                 <template v-if="bannerPreview">
                                     <img
                                         :src="bannerPreview"

@@ -19,6 +19,7 @@ import { toCategoryList } from '@/lib/eventCategories';
 import EventBannerImage from '@/components/modules/dashboard/EventBannerImage.vue';
 import TiptapRichHtml from '@/components/modules/dashboard/events/TiptapRichHtml.vue';
 import { routes } from '@/lib/routes';
+import { EVENT_HERO_BANNER_ASPECT } from '@/lib/eventBannerAspect';
 
 defineOptions({ layout: DashboardLayout });
 
@@ -129,7 +130,7 @@ const quotaPercent = computed(() => {
 
                 <!-- Kolom gambar: hanya visual, tanpa gradien/teks di atasnya -->
                 <div
-                    class="relative order-1 aspect-[16/10] min-h-[13rem] w-full sm:aspect-[2/1] sm:min-h-[15rem] lg:order-none lg:aspect-auto lg:min-h-full lg:min-w-0"
+                    :class="[EVENT_HERO_BANNER_ASPECT, 'relative order-1 w-full lg:order-none lg:aspect-auto lg:min-h-full lg:min-w-0']"
                 >
                     <EventBannerImage :src="event.banner_url" :alt="event.title" />
                 </div>

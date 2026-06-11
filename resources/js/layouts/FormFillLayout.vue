@@ -15,6 +15,9 @@ const fallbackBackHref = computed((): string => {
     return routes.member.joined
 })
 
+/** URL logo publik — dibentuk saat runtime agar Vite tidak mem-bundel path file PNG. */
+const formFillLogoSrc = `/${encodeURIComponent('DForm 1.png')}`
+
 function goBack(): void {
     if (typeof window !== 'undefined' && window.history.length > 1) {
         window.history.back()
@@ -39,10 +42,14 @@ function goBack(): void {
                     <span>Kembali</span>
                 </Button>
 
-                <Link :href="routes.home" class="hidden sm:block">
-                    <span class="font-display text-lg font-bold tracking-[-0.02em]">
-                        D<span class="text-primary">Form</span>
-                    </span>
+                <Link :href="routes.home" class="hidden sm:block transition-transform hover:-translate-y-px">
+                    <img
+                        :src="formFillLogoSrc"
+                        alt="DForm"
+                        class="h-9 w-auto select-none"
+                        width="160"
+                        height="40"
+                    />
                 </Link>
             </div>
         </header>

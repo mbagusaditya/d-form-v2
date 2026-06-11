@@ -44,19 +44,19 @@ const resolvedSrc = computed(() => {
 </script>
 
 <template>
-    <div class="bg-muted relative size-full min-h-20">
+    <div class="relative size-full overflow-hidden bg-muted">
         <img
             v-if="showImg"
             :src="resolvedSrc"
             :alt="props.alt"
             loading="lazy"
             decoding="async"
-            :class="cn('size-full object-cover', props.imgClass)"
+            :class="cn('absolute inset-0 size-full object-cover', props.imgClass)"
             @error="onError"
         />
         <div
             v-else
-            class="text-muted-foreground flex size-full min-h-[inherit] flex-col items-center justify-center gap-1.5 px-2 text-center"
+            class="text-muted-foreground absolute inset-0 flex flex-col items-center justify-center gap-1.5 px-2 text-center"
         >
             <ImageOff class="size-6 shrink-0 opacity-50" :stroke-width="1.8" aria-hidden="true" />
             <span class="text-[10px] leading-tight font-medium">No banner</span>

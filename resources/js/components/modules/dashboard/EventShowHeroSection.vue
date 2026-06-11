@@ -4,6 +4,7 @@ import { CalendarDays, MapPin } from 'lucide-vue-next'
 import { categoryColorMap, categoryLabelMap, formatDate } from '@/lib/dummyData'
 import { parseEventCategories } from '@/lib/eventShowUi'
 import EventBannerImage from '@/components/modules/dashboard/EventBannerImage.vue'
+import { EVENT_HERO_BANNER_ASPECT } from '@/lib/eventBannerAspect'
 
 type StatusPill = { label: string; classes: string }
 
@@ -28,7 +29,7 @@ defineProps<{
         <!-- Banner dan konten terpisah (tanpa margin negatif / scale) agar gambar tidak menumpuk teks -->
         <div class="grid min-w-0 grid-cols-1 lg:grid-cols-12 lg:items-stretch">
             <div class="relative isolate w-full min-w-0 overflow-hidden bg-muted lg:col-span-5">
-                <div class="aspect-video w-full sm:aspect-[3/1] lg:aspect-auto lg:h-full lg:min-h-[292px]">
+                <div :class="[EVENT_HERO_BANNER_ASPECT, 'w-full lg:aspect-auto lg:h-full lg:min-h-[292px]']">
                     <EventBannerImage
                         :src="event.banner_url ?? event.banner"
                         :alt="event.title"

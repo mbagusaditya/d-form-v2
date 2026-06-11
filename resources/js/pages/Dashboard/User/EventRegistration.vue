@@ -6,6 +6,7 @@ import PageHeader from '@/components/modules/dashboard/PageHeader.vue'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import EventBannerImage from '@/components/modules/dashboard/EventBannerImage.vue'
+import { eventHeroBannerContainerClass } from '@/lib/eventBannerAspect'
 import { CalendarDays, MapPin } from 'lucide-vue-next'
 import { formatDate, formatDateTime, statusColorMap } from '@/lib/dummyData'
 import { routes } from '@/lib/routes'
@@ -75,7 +76,7 @@ function isImageFileUrl(value: string): boolean {
         </div>
 
         <div class="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
-            <div class="relative aspect-video w-full sm:aspect-[3/1]">
+            <div :class="eventHeroBannerContainerClass()">
                 <EventBannerImage :src="props.event.banner_url" :alt="props.event.title" />
             </div>
             <div class="border-t border-border px-4 py-4 sm:px-6">

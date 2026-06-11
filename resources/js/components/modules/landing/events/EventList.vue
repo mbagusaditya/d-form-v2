@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { MapPin, Calendar, Users, Search, ArrowRight } from 'lucide-vue-next'
 import { routes } from '@/lib/routes'
+import { eventListThumbnailContainerClass } from '@/lib/eventBannerAspect'
+import EventBannerImage from '@/components/modules/dashboard/EventBannerImage.vue'
 
 const props = defineProps<{
     events: IEvent[]
@@ -93,15 +95,9 @@ const formatDate = (d: string) => {
                     :style="{ transitionDelay: `${60 + i * 30}ms` }"
                 >
                     <div class="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:p-5">
-                        <div class="aspect-video w-full shrink-0 overflow-hidden rounded-xl bg-muted sm:aspect-[4/3] sm:w-24">
-                            <img
-                                v-if="ev.banner_url"
-                                :src="ev.banner_url"
-                                :alt="ev.title"
-                                class="h-full w-full object-cover"
-                            />
-                            <div v-else class="flex h-full w-full items-center justify-center">
-                                <span class="text-lg font-bold text-muted-foreground/30">{{ ev.title.charAt(0) }}</span>
+                        <div :class="eventListThumbnailContainerClass()">
+                            <div class="absolute inset-0">
+                                <EventBannerImage :src="ev.banner_url" :alt="ev.title" />
                             </div>
                         </div>
 

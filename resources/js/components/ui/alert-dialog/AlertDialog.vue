@@ -1,11 +1,15 @@
 <script setup lang="ts">
-import { AlertDialogRoot } from 'reka-ui'
+import type { AlertDialogEmits, AlertDialogProps } from 'reka-ui'
+import { AlertDialogRoot, useForwardPropsEmits } from 'reka-ui'
 
-// Avoid importing AlertDialogRootProps: Vue SFC compiler cannot resolve it from reka-ui for runtime props.
-const props = defineProps<{
-    open?: boolean
-    defaultOpen?: boolean
-    modal?: boolean
-}>()
+const props = defineProps<AlertDialogProps>()
+const emits = defineEmits<AlertDialogEmits>()
+
+const forwarded = useForwardPropsEmits(props, emits)
 </script>
-<template><AlertDialogRoot v-bind="props"><slot /></AlertDialogRoot></template>
+
+<template>
+    <AlertDialogRoot v-bind="forwarded">
+        <slot />
+    </AlertDialogRoot>
+</template>

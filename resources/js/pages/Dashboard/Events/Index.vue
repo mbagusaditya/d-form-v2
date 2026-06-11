@@ -24,6 +24,7 @@ import {
 import { index as eventsIndex } from '@/actions/App/Http/Controllers/Dashboard/Events/EventController';
 import { formatDate, statusColorMap, categoryLabelMap, categoryColorMap, sessionLabelMap } from '@/lib/dummyData';
 import EventBannerImage from '@/components/modules/dashboard/EventBannerImage.vue';
+import { eventCardBannerContainerClass } from '@/lib/eventBannerAspect';
 import { routes } from '@/lib/routes';
 
 defineOptions({ layout: DashboardLayout });
@@ -312,7 +313,7 @@ function statusLabel(status: string) {
                 <Card
                     class="border-border/70 bg-card hover:border-primary/30 relative h-full gap-0 overflow-hidden rounded-2xl border p-0 shadow-sm ring-1 ring-black/[0.03] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:ring-white/[0.06]"
                 >
-                    <div class="bg-muted relative aspect-video w-full overflow-hidden sm:aspect-[4/3]">
+                    <div :class="eventCardBannerContainerClass()">
                         <div class="absolute inset-0 z-0">
                             <EventBannerImage
                                 :src="event.banner_url"

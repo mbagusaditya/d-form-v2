@@ -11,6 +11,7 @@ import { CalendarDays, Zap, Clock, MapPin, ArrowRight } from 'lucide-vue-next'
 import { formatDate, categoryLabelMap, categoryColorMap } from '@/lib/dummyData'
 import { toCategoryList } from '@/lib/eventCategories'
 import { routes } from '@/lib/routes'
+import { EVENT_CARD_BANNER_ASPECT } from '@/lib/eventBannerAspect'
 
 defineOptions({ layout: DashboardLayout })
 
@@ -65,7 +66,7 @@ const props = defineProps<Props>()
                         :href="routes.member.event.show(event.slug)"
                     class="flex items-center gap-4 rounded-lg border p-3 transition-colors hover:bg-muted/30"
                 >
-                    <div class="aspect-[4/3] w-20 shrink-0 overflow-hidden rounded-md bg-muted">
+                    <div :class="['w-20 shrink-0 overflow-hidden rounded-md bg-muted', EVENT_CARD_BANNER_ASPECT]">
                         <img :src="event.banner_url ?? ''" :alt="event.title" class="h-full w-full object-cover" />
                     </div>
                     <div class="min-w-0 flex-1">

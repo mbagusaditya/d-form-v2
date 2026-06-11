@@ -12,6 +12,7 @@ import { Search, MapPin, CalendarDays, Users } from 'lucide-vue-next';
 import { formatDate, categoryLabelMap, categoryColorMap } from '@/lib/dummyData';
 import { toCategoryList } from '@/lib/eventCategories';
 import EventBannerImage from '@/components/modules/dashboard/EventBannerImage.vue';
+import { eventCardBannerContainerClass } from '@/lib/eventBannerAspect';
 import { routes } from '@/lib/routes';
 
 defineOptions({ layout: DashboardLayout });
@@ -81,7 +82,7 @@ const emptyDescription = computed(() =>
                 <Card
                     class="hover:border-primary/25 gap-0 overflow-hidden rounded-xl border p-0 shadow-xs transition-colors duration-150 hover:shadow-sm"
                 >
-                    <div class="bg-muted relative aspect-video w-full overflow-hidden sm:aspect-[4/3]">
+                    <div :class="eventCardBannerContainerClass()">
                         <div class="absolute inset-0 z-0">
                             <EventBannerImage :src="event.banner_url" :alt="event.title" />
                         </div>

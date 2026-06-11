@@ -9,6 +9,7 @@ import { toCategoryList } from '@/lib/eventCategories';
 import { stripHtmlToText } from '@/utils/stripHtml';
 import type { SharedSeoProps } from '@/types/seo';
 import { routes } from '@/lib/routes';
+import { eventHeroBannerContainerClass } from '@/lib/eventBannerAspect';
 
 const props = defineProps<{
     event: IEvent;
@@ -129,7 +130,7 @@ const highlights: string[] = [
                             visible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0',
                         ]"
                     >
-                        <div class="relative aspect-video overflow-hidden bg-muted sm:aspect-[3/1]">
+                        <div :class="eventHeroBannerContainerClass('lg:aspect-auto lg:h-full lg:min-h-0')">
                             <img :src="event.banner_url ?? ''" :alt="event.title" class="h-full w-full object-cover" />
                             <div class="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent lg:from-black/35" />
                             <div class="absolute bottom-4 left-4 right-4 flex flex-wrap gap-2 lg:hidden">

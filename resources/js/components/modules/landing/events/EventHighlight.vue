@@ -5,6 +5,8 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { MapPin, Users, ArrowRight } from 'lucide-vue-next'
 import { routes } from '@/lib/routes'
+import { eventCardBannerContainerClass } from '@/lib/eventBannerAspect'
+import EventBannerImage from '@/components/modules/dashboard/EventBannerImage.vue'
 
 const props = defineProps<{
     events: IEvent[]
@@ -60,24 +62,22 @@ const statusVariant = (s: string) =>
                     v-for="(ev, i) in featured"
                     :key="ev.id"
                     :class="[
-                        'group overflow-hidden border-border/40 transition-all duration-500 hover:border-primary/25 hover:shadow-sm',
+                        'group gap-0 overflow-hidden border-border/40 p-0 transition-all duration-500 hover:border-primary/25 hover:shadow-sm',
                         visible ? 'translate-y-0 opacity-100' : 'translate-y-6 opacity-0',
                     ]"
                     :style="{ transitionDelay: `${100 + i * 80}ms` }"
                 >
-                    <div class="relative aspect-video w-full overflow-hidden bg-muted sm:aspect-[4/3]">
-                        <img
-                            v-if="ev.banner_url"
-                            :src="ev.banner_url"
-                            :alt="ev.title"
-                            class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                        />
-                        <div v-else class="flex h-full items-center justify-center">
-                            <span class="text-3xl font-bold text-muted-foreground/20">{{ ev.title.charAt(0) }}</span>
+                    <div :class="eventCardBannerContainerClass()">
+                        <div class="absolute inset-0 z-0">
+                            <EventBannerImage
+                                :src="ev.banner_url"
+                                :alt="ev.title"
+                                img-class="transition-transform duration-300 group-hover:scale-105"
+                            />
                         </div>
                         <Badge
                             variant="outline"
-                            :class="['absolute top-3 right-3 text-[10px] backdrop-blur-sm', statusVariant(ev.registration_status)]"
+                            :class="['absolute top-3 right-3 z-[1] text-[10px] backdrop-blur-sm', statusVariant(ev.registration_status)]"
                         >
                             {{ statusLabel(ev.registration_status) }}
                         </Badge>

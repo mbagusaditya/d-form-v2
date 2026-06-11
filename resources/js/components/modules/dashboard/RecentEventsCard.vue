@@ -8,6 +8,7 @@ import { dummyEvents, formatDate, categoryLabelMap } from '@/lib/dummyData'
 import { toCategoryList } from '@/lib/eventCategories'
 import { CalendarDays, MapPin, ArrowRight } from 'lucide-vue-next'
 import { routes } from '@/lib/routes'
+import { EVENT_CARD_BANNER_ASPECT } from '@/lib/eventBannerAspect'
 
 const props = defineProps<{
     events?: IEvent[]
@@ -48,7 +49,7 @@ const baseHref = computed(() => props.eventBaseHref ?? routes.admin.events.index
                 :href="`${baseHref}/${event.id}`"
                 class="group flex items-start gap-3 rounded-xl border border-transparent p-2 transition-[border-color,background-color] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] hover:border-border hover:bg-muted/40 sm:p-2.5"
             >
-                <div class="hidden aspect-[4/3] w-16 shrink-0 overflow-hidden rounded-lg border border-border bg-muted sm:block">
+                <div :class="['hidden w-16 shrink-0 overflow-hidden rounded-lg border border-border bg-muted sm:block', EVENT_CARD_BANNER_ASPECT]">
                     <img
                         :src="event.banner_url ?? ''"
                         :alt="event.title"
