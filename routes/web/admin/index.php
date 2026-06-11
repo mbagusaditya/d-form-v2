@@ -134,14 +134,20 @@ Route::middleware(['auth', 'member_portal'])->prefix('/events/joined')->name('da
         $event = app(UserPortalEventResolver::class)->resolvePublished($event_segment);
 
         $user = auth()->user();
-        $registration = FormAnswer::query()
+        $registrationBase = FormAnswer::query()
             ->where('user_id', $user->id)
             ->whereHas('form', function ($q) use ($event) {
                 $q->where('event_id', $event->id);
             })
-            ->excludeTerminatedInvitationMembers()
+            ->excludeTerminatedInvitationMembers();
+
+        $activeRegistration = (clone $registrationBase)
+            ->excludeRejectedSubmissions()
             ->orderByDesc('created_at')
             ->first();
+
+        $registration = $activeRegistration
+            ?? (clone $registrationBase)->orderByDesc('created_at')->first();
 
         $hasPendingTeamInvitation = $registration?->isMemberPendingInvitation() ?? false;
         $pendingTeamInvitationUrl = null;
@@ -152,13 +158,13 @@ Route::middleware(['auth', 'member_portal'])->prefix('/events/joined')->name('da
             }
         }
 
-        $isPortalRegistered = (bool) $registration && ! $hasPendingTeamInvitation;
+        $isPortalRegistered = $activeRegistration !== null && ! $hasPendingTeamInvitation;
 
         $qrBase64 = null;
         $registrationCode = null;
-        if ($isPortalRegistered && $registration->review_status === FormAnswerReviewStatus::Accepted) {
-            $registrationCode = $registration->registration_code;
-            $png = $qrGenerator->pngForSubmission($registration->id);
+        if ($isPortalRegistered && $activeRegistration->review_status === FormAnswerReviewStatus::Accepted) {
+            $registrationCode = $activeRegistration->registration_code;
+            $png = $qrGenerator->pngForSubmission($activeRegistration->id);
             $qrBase64 = base64_encode($png);
         }
 
@@ -166,7 +172,7 @@ Route::middleware(['auth', 'member_portal'])->prefix('/events/joined')->name('da
             'event' => $eventService->eventToInertiaArray($event),
             'isRegistered' => $isPortalRegistered,
             'pendingTeamInvitationUrl' => $pendingTeamInvitationUrl,
-            'registrationStatus' => $isPortalRegistered ? $registration?->review_status?->value : null,
+            'registrationStatus' => $isPortalRegistered ? $activeRegistration?->review_status?->value : null,
             'qr_base64' => $qrBase64,
             'registration_code' => $registrationCode,
         ]);

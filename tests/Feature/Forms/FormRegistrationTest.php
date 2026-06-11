@@ -2068,6 +2068,218 @@ class FormRegistrationTest extends TestCase
         $this->assertNotSame((string) $memberSubmission->id, (string) $newMemberSubmission->id);
     }
 
+    public function test_event_detail_allows_register_after_rejection_only(): void
+    {
+        $admin  = $this->admin();
+        $member = $this->member();
+        $event  = $this->openEvent();
+        $form   = $this->openForm($event);
+        $this->textField($form);
+
+        $this->actingAs($member)
+            ->post($this->submitPath($event, $form), ['full_name' => 'Rejected User'])
+            ->assertRedirect($this->submitSuccessRedirect($event, $member));
+
+        $submission = FormAnswer::query()->where('form_id', $form->id)->where('user_id', $member->id)->firstOrFail();
+
+        $this->actingAs($admin)
+            ->patchJson($this->reviewPath($event, $form, $submission), [
+                'review_status' => FormAnswerReviewStatus::Rejected->value,
+            ])
+            ->assertOk();
+
+        $this->actingAs($member)
+            ->get(route('dashboard.user.events.show', ['event_segment' => $event->slug], false))
+            ->assertOk()
+            ->assertInertia(
+                fn ($page) => $page
+                    ->component('Dashboard/User/EventDetail')
+                    ->where('isRegistered', false)
+                    ->where('registrationStatus', null)
+            );
+    }
+
+    public function test_bundle_leader_can_resubmit_after_rejection(): void
+    {
+        Mail::fake();
+
+        $admin      = $this->admin();
+        $leader     = $this->memberWithEmail('bundle-reresubmit-leader-'.uniqid().'@example.com');
+        $guestEmail = 'bundle-reresubmit-guest-'.uniqid().'@example.com';
+        $event      = $this->openEvent();
+        $form       = $this->openForm($event, [
+            'metadata' => [
+                'registration_mode' => 'bundle',
+                'max_team_size' => 2,
+            ],
+        ]);
+        $this->duplicatableTextField($form);
+
+        $this->actingAs($leader)
+            ->post($this->submitPath($event, $form), [
+                'full_name' => 'Lead Person',
+                'bundle__full_name__0' => 'Guest Person',
+                'team_member_emails' => [$guestEmail],
+            ])
+            ->assertRedirect($this->submitSuccessRedirect($event, $leader));
+
+        $leaderRow = FormAnswer::query()->where('form_id', $form->id)->where('user_id', $leader->id)->firstOrFail();
+
+        $this->actingAs($admin)
+            ->patchJson($this->reviewPath($event, $form, $leaderRow), [
+                'review_status' => FormAnswerReviewStatus::Rejected->value,
+            ])
+            ->assertOk();
+
+        $this->actingAs($leader)
+            ->get($this->fillPath($event, $form))
+            ->assertOk()
+            ->assertInertia(
+                fn ($page) => $page->where('accessStatus', FormAccessStatus::Allowed->value)
+            );
+
+        $this->actingAs($leader)
+            ->post($this->submitPath($event, $form), [
+                'full_name' => 'Lead Person Retry',
+                'bundle__full_name__0' => 'Guest Person Retry',
+                'team_member_emails' => [$guestEmail],
+            ])
+            ->assertRedirect($this->submitSuccessRedirect($event, $leader));
+
+        $this->assertDatabaseHas('form_answers', [
+            'form_id' => $form->id,
+            'user_id' => $leader->id,
+            'review_status' => FormAnswerReviewStatus::Pending->value,
+            'answers->full_name' => 'Lead Person Retry',
+        ]);
+    }
+
+    public function test_reject_bundle_leader_cascades_to_all_members(): void
+    {
+        Mail::fake();
+
+        $admin      = $this->admin();
+        $leader     = $this->member();
+        $guestEmail = 'bundle-cascade-guest-'.uniqid().'@example.com';
+        $event      = $this->openEvent();
+        $form       = $this->openForm($event, [
+            'metadata' => [
+                'registration_mode' => 'bundle',
+                'max_team_size' => 2,
+            ],
+        ]);
+        $this->duplicatableTextField($form);
+
+        $this->actingAs($leader)
+            ->post($this->submitPath($event, $form), [
+                'full_name' => 'Lead Person',
+                'bundle__full_name__0' => 'Guest Person',
+                'team_member_emails' => [$guestEmail],
+            ])
+            ->assertRedirect($this->submitSuccessRedirect($event, $leader));
+
+        $leaderRow = FormAnswer::query()->where('form_id', $form->id)->where('user_id', $leader->id)->firstOrFail();
+        $memberRow = FormAnswer::query()->where('form_id', $form->id)->where('invited_email', mb_strtolower($guestEmail))->firstOrFail();
+
+        $this->actingAs($admin)
+            ->patchJson($this->reviewPath($event, $form, $leaderRow), [
+                'review_status' => FormAnswerReviewStatus::Rejected->value,
+            ])
+            ->assertOk()
+            ->assertJsonPath('cascaded_rejections', 1);
+
+        $leaderRow->refresh();
+        $memberRow->refresh();
+
+        $this->assertSame(FormAnswerReviewStatus::Rejected, $leaderRow->review_status);
+        $this->assertSame(FormAnswerReviewStatus::Rejected, $memberRow->review_status);
+    }
+
+    public function test_reject_team_member_cascades_to_leader_and_peers(): void
+    {
+        Mail::fake();
+
+        $admin      = $this->admin();
+        $leaderUser = $this->member();
+        $memberUser = $this->member();
+        $event      = $this->openEvent();
+        $form       = $this->openForm($event, [
+            'metadata' => [
+                'registration_mode' => 'team',
+                'team_size' => 2,
+            ],
+        ]);
+        $this->textField($form);
+
+        $leaderAnswer = FormAnswer::factory()->create([
+            'form_id' => $form->id,
+            'user_id' => $leaderUser->id,
+            'registration_role' => RegistrationRole::Leader,
+            'member_confirmation_status' => MemberConfirmationStatus::Accepted,
+            'review_status' => FormAnswerReviewStatus::Accepted,
+            'registration_code' => 'TEAM-L-'.uniqid(),
+            'answers' => ['full_name' => 'Leader'],
+        ]);
+
+        $memberAnswer = FormAnswer::factory()->create([
+            'form_id' => $form->id,
+            'user_id' => $memberUser->id,
+            'leader_form_answer_id' => $leaderAnswer->id,
+            'registration_role' => RegistrationRole::Member,
+            'member_confirmation_status' => MemberConfirmationStatus::Accepted,
+            'review_status' => FormAnswerReviewStatus::Pending,
+            'answers' => ['full_name' => 'Member'],
+        ]);
+
+        $this->actingAs($admin)
+            ->patchJson($this->reviewPath($event, $form, $memberAnswer), [
+                'review_status' => FormAnswerReviewStatus::Rejected->value,
+            ])
+            ->assertOk()
+            ->assertJsonPath('cascaded_rejections', 1);
+
+        $leaderAnswer->refresh();
+        $memberAnswer->refresh();
+
+        $this->assertSame(FormAnswerReviewStatus::Rejected, $leaderAnswer->review_status);
+        $this->assertSame(FormAnswerReviewStatus::Rejected, $memberAnswer->review_status);
+    }
+
+    public function test_cascade_reject_sends_email_per_participant(): void
+    {
+        Mail::fake();
+
+        $admin      = $this->admin();
+        $leader     = $this->member();
+        $guestEmail = 'bundle-email-cascade-'.uniqid().'@example.com';
+        $event      = $this->openEvent();
+        $form       = $this->openForm($event, [
+            'metadata' => [
+                'registration_mode' => 'bundle',
+                'max_team_size' => 2,
+            ],
+        ]);
+        $this->duplicatableTextField($form);
+
+        $this->actingAs($leader)
+            ->post($this->submitPath($event, $form), [
+                'full_name' => 'Lead Person',
+                'bundle__full_name__0' => 'Guest Person',
+                'team_member_emails' => [$guestEmail],
+            ])
+            ->assertRedirect($this->submitSuccessRedirect($event, $leader));
+
+        $leaderRow = FormAnswer::query()->where('form_id', $form->id)->where('user_id', $leader->id)->firstOrFail();
+
+        $this->actingAs($admin)
+            ->patchJson($this->reviewPath($event, $form, $leaderRow), [
+                'review_status' => FormAnswerReviewStatus::Rejected->value,
+            ])
+            ->assertOk();
+
+        Mail::assertSent(RegistrationRejectedMail::class, 2);
+    }
+
     public function test_member_can_register_individually_after_declining_invitation(): void
     {
         Mail::fake();
