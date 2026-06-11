@@ -6,10 +6,15 @@ use App\Enums\FormAnswerReviewStatus;
 use App\Enums\MemberConfirmationStatus;
 use App\Enums\RegistrationRole;
 use App\Models\FormAnswer;
+use App\Services\Registration\BundleGuestDisplayNameResolver;
 use Illuminate\Support\Collection;
 
 final class BundleSubmissionGrouper
 {
+    public function __construct(
+        private BundleGuestDisplayNameResolver $displayNameResolver,
+    ) {
+    }
     /**
      * Group form answers by group_token and prepare bundle group data.
      *
@@ -87,6 +92,7 @@ final class BundleSubmissionGrouper
 
         return [
             'id' => $answer->id,
+            'display_name' => $this->displayNameResolver->resolve($answer),
             'user' => $answer->user
                 ? [
                     'id' => $answer->user->id,

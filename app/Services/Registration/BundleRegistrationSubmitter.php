@@ -16,6 +16,7 @@ final class BundleRegistrationSubmitter
 {
     public function __construct(
         private EventRegistrationCounter $registrationCounter,
+        private BundleGuestDuplicateChecker $duplicateChecker,
     ) {
     }
 
@@ -33,7 +34,7 @@ final class BundleRegistrationSubmitter
 
     /**
      * @param  list<array<string, mixed>>  $memberAnswerRows  one merged answers payload per member (same keys as leader)
-     * @param  list<User>  $memberUsers
+     * @param  list<string>  $memberEmails  normalized lowercase emails
      * @return array{leader: FormAnswer, members: list<FormAnswer>}
      */
     public function submit(
@@ -42,7 +43,7 @@ final class BundleRegistrationSubmitter
         User $leaderUser,
         array $leaderAnswers,
         array $memberAnswerRows,
-        array $memberUsers,
+        array $memberEmails,
         bool $adminExemptFromQuota,
     ): array {
         $teamSize = TeamRegistrationSubmitter::resolveTeamSize($form);
@@ -53,7 +54,7 @@ final class BundleRegistrationSubmitter
             ]);
         }
 
-        if (count($memberUsers) !== $teamSize - 1 || count($memberAnswerRows) !== count($memberUsers)) {
+        if (count($memberEmails) !== $teamSize - 1 || count($memberAnswerRows) !== count($memberEmails)) {
             throw ValidationException::withMessages([
                 'team_member_emails' => __('Bundle participants were misconfigured. Try again or contact the organizer.'),
             ]);
@@ -68,7 +69,7 @@ final class BundleRegistrationSubmitter
             $form,
             $event,
             $leaderUser,
-            $memberUsers,
+            $memberEmails,
             $leaderAnswers,
             $memberAnswerRows,
             $adminExemptFromQuota,
@@ -79,24 +80,32 @@ final class BundleRegistrationSubmitter
                 throw new \RuntimeException('Event not found.');
             }
 
-            $participants = array_merge([$leaderUser], $memberUsers);
-            foreach ($participants as $participant) {
-                if (FormAnswer::query()
-                    ->where('form_id', $form->id)
-                    ->where('user_id', $participant->id)
-                    ->excludeRejectedSubmissions()
-                    ->lockForUpdate()
-                    ->exists()) {
-                    throw ValidationException::withMessages([
-                        'team_member_emails' => __('A participant is already registered for this form.'),
-                    ]);
+            if (FormAnswer::query()
+                ->where('form_id', $form->id)
+                ->where('user_id', $leaderUser->id)
+                ->excludeRejectedSubmissions()
+                ->lockForUpdate()
+                ->exists()) {
+                throw ValidationException::withMessages([
+                    'team_member_emails' => __('A participant is already registered for this form.'),
+                ]);
+            }
+
+            foreach ($memberEmails as $i => $email) {
+                try {
+                    $this->duplicateChecker->assertEmailAvailableForForm(
+                        $form,
+                        $email,
+                        "team_member_emails.{$i}",
+                    );
+                } catch (ValidationException $e) {
+                    throw $e;
                 }
             }
 
             $this->registrationCounter->assertCanReserve($lockedEvent, $teamSize, $adminExemptFromQuota);
 
             $groupToken = $this->generateUniqueGroupToken((string) $form->id);
-            $inviteExpiresAt = now()->addDays((int) config('registration.invitation_ttl_days', 7));
 
             $leader = FormAnswer::query()->create([
                 'answers' => $leaderAnswers,
@@ -114,18 +123,21 @@ final class BundleRegistrationSubmitter
 
             $memberRows = [];
 
-            foreach ($memberUsers as $i => $memberUser) {
+            foreach ($memberEmails as $i => $email) {
+                $linkedUser = User::query()->whereRaw('LOWER(email) = ?', [$email])->first();
+
                 $memberRows[] = FormAnswer::query()->create([
                     'answers' => $memberAnswerRows[$i],
                     'form_id' => $form->id,
-                    'user_id' => (string) $memberUser->id,
+                    'user_id' => $linkedUser !== null ? (string) $linkedUser->id : null,
                     'leader_form_answer_id' => $leader->id,
                     'registration_role' => RegistrationRole::Member,
-                    'member_confirmation_status' => MemberConfirmationStatus::Pending,
-                    'invitation_token' => $this->generateUniqueInvitationToken(),
+                    'member_confirmation_status' => MemberConfirmationStatus::Accepted,
+                    'member_confirmed_at' => now(),
+                    'invitation_token' => null,
                     'group_token' => $groupToken,
-                    'invited_email' => $memberUser->email,
-                    'invitation_expired_at' => $inviteExpiresAt,
+                    'invited_email' => $email,
+                    'invitation_expired_at' => null,
                 ]);
             }
 
@@ -148,17 +160,5 @@ final class BundleRegistrationSubmitter
         }
 
         throw new \RuntimeException('Could not generate a unique group token.');
-    }
-
-    private function generateUniqueInvitationToken(): string
-    {
-        for ($i = 0; $i < 32; $i++) {
-            $token = Str::random(48);
-            if (! FormAnswer::query()->where('invitation_token', $token)->exists()) {
-                return $token;
-            }
-        }
-
-        throw new \RuntimeException('Could not generate a unique invitation token.');
     }
 }

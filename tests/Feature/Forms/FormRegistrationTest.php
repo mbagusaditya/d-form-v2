@@ -1081,10 +1081,10 @@ class FormRegistrationTest extends TestCase
     {
         Mail::fake();
 
-        $leader = $this->memberWithEmail('bundle-leader-'.uniqid().'@example.com');
-        $mate   = $this->memberWithEmail('bundle-mate-'.uniqid().'@example.com');
-        $event  = $this->openEvent();
-        $form   = $this->openForm($event, [
+        $leader     = $this->memberWithEmail('bundle-leader-'.uniqid().'@example.com');
+        $guestEmail = 'bundle-guest-'.uniqid().'@example.com';
+        $event      = $this->openEvent();
+        $form       = $this->openForm($event, [
             'metadata' => [
                 'registration_mode' => 'bundle',
                 'max_team_size' => 2,
@@ -1096,19 +1096,21 @@ class FormRegistrationTest extends TestCase
             ->post($this->submitPath($event, $form), [
                 'full_name' => 'Lead Person',
                 'bundle__full_name__0' => 'Second Person',
-                'team_member_emails' => [$mate->email],
+                'team_member_emails' => [$guestEmail],
             ])
             ->assertRedirect($this->submitSuccessRedirect($event, $leader));
 
         $this->assertDatabaseCount('form_answers', 2);
 
         $leaderRow = FormAnswer::query()->where('form_id', $form->id)->where('user_id', $leader->id)->firstOrFail();
-        $memberRow = FormAnswer::query()->where('form_id', $form->id)->where('user_id', $mate->id)->firstOrFail();
+        $memberRow = FormAnswer::query()->where('form_id', $form->id)->where('invited_email', mb_strtolower($guestEmail))->firstOrFail();
 
         $this->assertNotNull($leaderRow->group_token);
         $this->assertSame($leaderRow->group_token, $memberRow->group_token);
         $this->assertSame(MemberConfirmationStatus::Accepted, $leaderRow->member_confirmation_status);
-        $this->assertSame(MemberConfirmationStatus::Pending, $memberRow->member_confirmation_status);
+        $this->assertSame(MemberConfirmationStatus::Accepted, $memberRow->member_confirmation_status);
+        $this->assertNull($memberRow->user_id);
+        $this->assertNull($memberRow->invitation_token);
         $this->assertSame('Lead Person', $leaderRow->answers['full_name'] ?? null);
         $this->assertSame('Second Person', $memberRow->answers['full_name'] ?? null);
 
@@ -1116,12 +1118,170 @@ class FormRegistrationTest extends TestCase
             return (string) $mail->submission->id === (string) $leaderRow->id
                 && $mail->qrPngBinary === null;
         });
-        Mail::assertSent(TeamInvitationMail::class, 1);
+        Mail::assertSent(RegistrationConfirmationMail::class, function (RegistrationConfirmationMail $mail) use ($memberRow): bool {
+            return (string) $mail->submission->id === (string) $memberRow->id
+                && $mail->qrPngBinary === null;
+        });
+        Mail::assertNotSent(TeamInvitationMail::class);
 
         $this->assertDatabaseHas('email_logs', [
             'form_answer_id' => $leaderRow->id,
             'notification_type' => EmailNotificationType::RegistrationSubmitted->value,
         ]);
+    }
+
+    public function test_bundle_submission_rejects_duplicate_guest_email(): void
+    {
+        $leader     = $this->memberWithEmail('bundle-leader-dup-'.uniqid().'@example.com');
+        $guestEmail = 'bundle-guest-dup-'.uniqid().'@example.com';
+        $event      = $this->openEvent();
+        $form       = $this->openForm($event, [
+            'metadata' => [
+                'registration_mode' => 'bundle',
+                'max_team_size' => 2,
+            ],
+        ]);
+        $this->duplicatableTextField($form);
+
+        FormAnswer::factory()->create([
+            'form_id' => $form->id,
+            'user_id' => null,
+            'invited_email' => $guestEmail,
+            'registration_role' => RegistrationRole::Member,
+            'member_confirmation_status' => MemberConfirmationStatus::Accepted,
+            'group_token' => 'EXISTING',
+            'answers' => ['full_name' => 'Existing Guest'],
+        ]);
+
+        $this->actingAs($leader)
+            ->post($this->submitPath($event, $form), [
+                'full_name' => 'Lead Person',
+                'bundle__full_name__0' => 'Second Person',
+                'team_member_emails' => [$guestEmail],
+            ])
+            ->assertRedirect($this->fillPath($event, $form))
+            ->assertSessionHasErrors('team_member_emails.0');
+    }
+
+    public function test_admin_can_accept_bundle_guest_member_without_invitation_step(): void
+    {
+        Mail::fake();
+
+        $admin  = $this->admin();
+        $event  = $this->openEvent();
+        $form   = $this->openForm($event, [
+            'metadata' => [
+                'registration_mode' => 'bundle',
+                'max_team_size' => 2,
+            ],
+        ]);
+        $leaderUser = $this->member();
+        $guestEmail = 'bundle-guest-review-'.uniqid().'@example.com';
+
+        $leaderAnswer = FormAnswer::factory()->create([
+            'form_id' => $form->id,
+            'user_id' => $leaderUser->id,
+            'registration_role' => RegistrationRole::Leader,
+            'member_confirmation_status' => MemberConfirmationStatus::Accepted,
+            'group_token' => 'GRP'.uniqid(),
+            'review_status' => FormAnswerReviewStatus::Pending,
+        ]);
+
+        $memberAnswer = FormAnswer::factory()->create([
+            'form_id' => $form->id,
+            'user_id' => null,
+            'leader_form_answer_id' => $leaderAnswer->id,
+            'registration_role' => RegistrationRole::Member,
+            'member_confirmation_status' => MemberConfirmationStatus::Accepted,
+            'member_confirmed_at' => now(),
+            'invited_email' => $guestEmail,
+            'group_token' => $leaderAnswer->group_token,
+            'review_status' => FormAnswerReviewStatus::Pending,
+            'answers' => ['full_name' => 'Guest Person'],
+        ]);
+
+        $this->actingAs($admin)
+            ->patchJson($this->reviewPath($event, $form, $memberAnswer), [
+                'review_status' => FormAnswerReviewStatus::Accepted->value,
+            ])
+            ->assertOk()
+            ->assertJsonPath('review_status', FormAnswerReviewStatus::Accepted->value);
+
+        Mail::assertSent(RegistrationAcceptedMail::class, function (RegistrationAcceptedMail $mail) use ($memberAnswer): bool {
+            return (string) $mail->submission->id === (string) $memberAnswer->id;
+        });
+    }
+
+    public function test_legacy_bundle_pending_member_still_blocked_from_admin_review(): void
+    {
+        $admin = $this->admin();
+        $event = $this->openEvent();
+        $form  = $this->openForm($event, [
+            'metadata' => [
+                'registration_mode' => 'bundle',
+                'max_team_size' => 2,
+            ],
+        ]);
+        $memberUser = $this->member();
+        $leaderUser = $this->member();
+
+        $leaderAnswer = FormAnswer::factory()->create([
+            'form_id' => $form->id,
+            'user_id' => $leaderUser->id,
+            'registration_role' => RegistrationRole::Leader,
+            'member_confirmation_status' => MemberConfirmationStatus::Accepted,
+            'group_token' => 'LEG'.uniqid(),
+            'review_status' => FormAnswerReviewStatus::Pending,
+        ]);
+
+        $memberAnswer = FormAnswer::factory()->create([
+            'form_id' => $form->id,
+            'user_id' => $memberUser->id,
+            'leader_form_answer_id' => $leaderAnswer->id,
+            'registration_role' => RegistrationRole::Member,
+            'member_confirmation_status' => MemberConfirmationStatus::Pending,
+            'invitation_token' => 'legacy-bundle-'.uniqid(),
+            'invited_email' => $memberUser->email,
+            'group_token' => $leaderAnswer->group_token,
+            'invitation_expired_at' => now()->addDays(7),
+            'review_status' => FormAnswerReviewStatus::Pending,
+            'answers' => ['full_name' => 'Legacy Pending Guest'],
+        ]);
+
+        Mail::fake();
+
+        $this->actingAs($admin)
+            ->patchJson($this->reviewPath($event, $form, $memberAnswer), [
+                'review_status' => FormAnswerReviewStatus::Accepted->value,
+            ])
+            ->assertStatus(422);
+
+        $memberAnswer->refresh();
+        $this->assertSame(FormAnswerReviewStatus::Pending, $memberAnswer->review_status);
+        $this->assertSame(MemberConfirmationStatus::Pending, $memberAnswer->member_confirmation_status);
+        Mail::assertNothingSent();
+    }
+
+    public function test_team_submission_still_requires_existing_user_account(): void
+    {
+        $leader     = $this->member();
+        $guestEmail = 'team-guest-'.uniqid().'@example.com';
+        $event      = $this->openEvent();
+        $form       = $this->openForm($event, [
+            'metadata' => [
+                'registration_mode' => 'team',
+                'team_size' => 2,
+            ],
+        ]);
+        $this->textField($form);
+
+        $this->actingAs($leader)
+            ->post($this->submitPath($event, $form), [
+                'full_name' => 'Lead Person',
+                'team_member_emails' => [$guestEmail],
+            ])
+            ->assertRedirect($this->fillPath($event, $form))
+            ->assertSessionHasErrors('team_member_emails.0');
     }
 
     public function test_expired_invitation_returns_403_and_marks_expired(): void

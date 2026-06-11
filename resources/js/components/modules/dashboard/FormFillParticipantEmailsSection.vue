@@ -52,7 +52,7 @@ function createPerSlotTrailingDebounce(
     }
 }
 
-type CheckStatus = 'idle' | 'loading' | 'found' | 'not_found' | 'invalid' | 'error'
+type CheckStatus = 'idle' | 'loading' | 'found' | 'valid' | 'not_found' | 'invalid' | 'error'
 
 interface FoundUser {
     name: string
@@ -81,14 +81,15 @@ const abortBySlot = new Map<number, AbortController>()
 
 const memberSlots = computed(() => props.ctx.memberSlots)
 const registrationMode = computed(() => props.ctx.registrationMode)
+const isBundleMode = computed(() => registrationMode.value === 'bundle')
 
 const sectionTitle = computed(() =>
-    registrationMode.value === 'bundle' ? 'Participant emails' : 'Team member emails',
+    isBundleMode.value ? 'Participant emails' : 'Team member emails',
 )
 
 const sectionHint = computed(() =>
-    registrationMode.value === 'bundle'
-        ? 'Each address is checked against an existing account before you submit.'
+    isBundleMode.value
+        ? 'Enter a valid email for each participant. They will receive their ticket by email.'
         : 'We verify each teammate’s email before registration is sent.',
 )
 
@@ -234,6 +235,13 @@ function scheduleCheck(slot: number) {
         return
     }
 
+    if (isBundleMode.value) {
+        abortBySlot.get(slot)?.abort()
+        debouncedEmailCheck.cancel(slot)
+        setCheckState(slot, 'valid', undefined, 'Participant will receive their ticket by email.')
+        return
+    }
+
     debouncedEmailCheck.schedule(slot)
 }
 
@@ -265,7 +273,7 @@ function summaryLine(slot: number): string {
 
 function rowAccentClass(slot: number): string {
     const s = statusFor(slot)
-    if (s === 'found') {
+    if (s === 'found' || s === 'valid') {
         return 'border-emerald-500/30 bg-emerald-500/[0.04] shadow-[0_0_0_1px_rgba(16,185,129,0.06)]'
     }
     if (s === 'not_found' || s === 'invalid' || s === 'error') {
@@ -326,7 +334,14 @@ onBeforeUnmount(() => {
                                 {{ registrationMode === 'bundle' ? 'Participant' : 'Teammate' }} {{ slot }}
                             </span>
                             <Badge
-                                v-if="statusFor(slot) === 'found'"
+                                v-if="statusFor(slot) === 'valid'"
+                                variant="secondary"
+                                :class="cn(badgeClass, 'border-emerald-500/30 bg-emerald-500/12 text-emerald-800 dark:text-emerald-200')"
+                            >
+                                Valid
+                            </Badge>
+                            <Badge
+                                v-else-if="statusFor(slot) === 'found'"
                                 variant="secondary"
                                 :class="cn(badgeClass, 'border-emerald-500/30 bg-emerald-500/12 text-emerald-800 dark:text-emerald-200')"
                             >
@@ -365,7 +380,7 @@ onBeforeUnmount(() => {
                             aria-hidden="true"
                         />
                         <CheckCircle2
-                            v-else-if="statusFor(slot) === 'found'"
+                            v-else-if="statusFor(slot) === 'found' || statusFor(slot) === 'valid'"
                             class="size-[18px] text-emerald-600 dark:text-emerald-400"
                             aria-hidden="true"
                         />
@@ -418,7 +433,7 @@ onBeforeUnmount(() => {
                                         class="size-5 animate-spin text-primary"
                                     />
                                     <CheckCircle2
-                                        v-else-if="statusFor(slot) === 'found'"
+                                        v-else-if="statusFor(slot) === 'found' || statusFor(slot) === 'valid'"
                                         key="ok"
                                         class="size-5 text-emerald-600 dark:text-emerald-400"
                                     />
@@ -443,7 +458,7 @@ onBeforeUnmount(() => {
                                 :class="
                                     cn(
                                         'h-11 min-h-11 rounded-lg pl-10 text-[15px] shadow-none transition-[border-color,box-shadow] duration-200',
-                                        statusFor(slot) === 'found' &&
+                                        (statusFor(slot) === 'found' || statusFor(slot) === 'valid') &&
                                             'border-emerald-500/50 focus-visible:border-emerald-600 focus-visible:ring-2 focus-visible:ring-emerald-500/20',
                                         (statusFor(slot) === 'not_found' ||
                                             statusFor(slot) === 'invalid' ||
@@ -464,7 +479,7 @@ onBeforeUnmount(() => {
                             leave-to-class="opacity-0 -translate-y-1"
                         >
                             <div
-                                v-if="statusFor(slot) === 'found' && foundUserBySlot[slot]"
+                                v-if="!isBundleMode && statusFor(slot) === 'found' && foundUserBySlot[slot]"
                                 class="mt-3 overflow-hidden rounded-lg border border-emerald-500/20 bg-gradient-to-br from-emerald-500/[0.09] to-emerald-500/[0.02] px-3 py-3 dark:from-emerald-950/40 dark:to-transparent"
                             >
                                 <div class="flex gap-3">

@@ -10,6 +10,7 @@ use App\Enums\RegistrationRole;
 use App\Mail\RegistrationConfirmationMail;
 use App\Models\EmailLog;
 use App\Models\FormAnswer;
+use App\Services\Registration\FormAnswerRecipientResolver;
 use App\Services\Registration\RegistrationAnswersSummarizer;
 use App\Services\Registration\RegistrationQrPngGenerator;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -30,6 +31,7 @@ class SendRegistrationConfirmationJob implements ShouldQueue
     public function handle(
         RegistrationAnswersSummarizer $summarizer,
         RegistrationQrPngGenerator $qrGenerator,
+        FormAnswerRecipientResolver $recipientResolver,
     ): void {
         $submission = FormAnswer::query()
             ->with(['form.event', 'user'])
@@ -43,26 +45,18 @@ class SendRegistrationConfirmationJob implements ShouldQueue
             return;
         }
 
-        $user = $submission->user;
-        if ($user === null) {
-            Log::warning('[SendRegistrationConfirmationJob] Submission has no user.', [
-                'form_answer_id' => $submission->id,
-            ]);
-
-            return;
-        }
-
+        $recipientEmail = $recipientResolver->email($submission);
         $event = $submission->form->event;
 
-        if ($user->email === '') {
+        if ($recipientEmail === null || $recipientEmail === '') {
             EmailLog::query()->create([
                 'form_answer_id' => $submission->id,
                 'event_id' => $event->id,
-                'user_id' => $user->id,
+                'user_id' => $recipientResolver->userIdForLog($submission),
                 'recipient_email' => '',
                 'status' => EmailLogStatus::Failed,
                 'notification_type' => EmailNotificationType::RegistrationSubmitted,
-                'error_message' => 'User has no email address configured.',
+                'error_message' => 'No recipient email address configured.',
                 'sent_at' => null,
             ]);
 
@@ -77,7 +71,7 @@ class SendRegistrationConfirmationJob implements ShouldQueue
 
         $isTeamOrBundleLeader = $submission->registration_role === RegistrationRole::Leader;
         $isAccepted = $submission->review_status === FormAnswerReviewStatus::Accepted;
-        
+
         // Only generate QR code for accepted submissions (except team/bundle leaders)
         $qrPng = ($isTeamOrBundleLeader || ! $isAccepted)
             ? null
@@ -86,15 +80,15 @@ class SendRegistrationConfirmationJob implements ShouldQueue
         try {
             $this->applyOutgoingEmailJitter();
 
-            Mail::to($user->email)->send(
+            Mail::to($recipientEmail)->send(
                 new RegistrationConfirmationMail($submission, $answersSummary, $qrPng)
             );
 
             EmailLog::query()->create([
                 'form_answer_id' => $submission->id,
                 'event_id' => $event->id,
-                'user_id' => $user->id,
-                'recipient_email' => $user->email,
+                'user_id' => $recipientResolver->userIdForLog($submission),
+                'recipient_email' => $recipientEmail,
                 'status' => EmailLogStatus::Sent,
                 'notification_type' => EmailNotificationType::RegistrationSubmitted,
                 'error_message' => null,
@@ -104,8 +98,8 @@ class SendRegistrationConfirmationJob implements ShouldQueue
             EmailLog::query()->create([
                 'form_answer_id' => $submission->id,
                 'event_id' => $event->id,
-                'user_id' => $user->id,
-                'recipient_email' => $user->email,
+                'user_id' => $recipientResolver->userIdForLog($submission),
+                'recipient_email' => $recipientEmail,
                 'status' => EmailLogStatus::Failed,
                 'notification_type' => EmailNotificationType::RegistrationSubmitted,
                 'error_message' => $e->getMessage(),
@@ -116,7 +110,7 @@ class SendRegistrationConfirmationJob implements ShouldQueue
                 'notification_type' => EmailNotificationType::RegistrationSubmitted->value,
                 'form_answer_id' => $submission->id,
                 'event_id' => $event->id,
-                'recipient_email' => $user->email,
+                'recipient_email' => $recipientEmail,
                 'exception_class' => $e::class,
                 'exception_message' => $e->getMessage(),
                 'exception' => $e,

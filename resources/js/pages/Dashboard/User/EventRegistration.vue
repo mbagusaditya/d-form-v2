@@ -13,6 +13,14 @@ import { routes } from '@/lib/routes'
 
 defineOptions({ layout: DashboardLayout })
 
+interface BundleParticipant {
+    invited_email: string
+    display_name: string
+    review_status: 'pending' | 'accepted' | 'rejected'
+    registration_code: string | null
+    qr_base64: string | null
+}
+
 const props = defineProps<{
     event: IEvent
     form: { id: string; title: string; registration_mode: 'single' | 'bundle' | 'team' | null } | null
@@ -25,7 +33,20 @@ const props = defineProps<{
         answers_summary: Record<string, string>
         qr_base64: string | null
     }
+    bundle_participants?: BundleParticipant[]
 }>()
+
+const bundleParticipants = computed(() => props.bundle_participants ?? [])
+
+const isBundleLeader = computed(
+    () => props.form?.registration_mode === 'bundle' && props.registration.registration_role === 'leader',
+)
+
+const participantStatusLabels: Record<BundleParticipant['review_status'], string> = {
+    pending: 'Awaiting review',
+    accepted: 'Accepted',
+    rejected: 'Not accepted',
+}
 
 const statusLabels: Record<(typeof props.registration)['review_status'], string> = {
     pending: 'Awaiting review',
@@ -186,6 +207,70 @@ function isImageFileUrl(value: string): boolean {
         <Card v-else-if="props.registration.review_status === 'pending'" class="rounded-xl border shadow-xs">
             <CardContent class="py-6 text-center text-sm text-muted-foreground">
                 Your registration is being reviewed. Check-in QR and manual code appear here after acceptance.
+            </CardContent>
+        </Card>
+
+        <Card
+            v-if="isBundleLeader && bundleParticipants.length > 0"
+            class="rounded-xl border shadow-xs"
+        >
+            <CardHeader class="pb-3">
+                <CardTitle class="text-sm font-medium">Bundle participants</CardTitle>
+            </CardHeader>
+            <CardContent class="space-y-4 pt-0">
+                <div
+                    v-for="(participant, index) in bundleParticipants"
+                    :key="`${participant.invited_email}-${index}`"
+                    class="rounded-lg border border-border/60 bg-muted/15 px-3 py-3"
+                >
+                    <div class="flex flex-wrap items-start justify-between gap-2">
+                        <div class="min-w-0">
+                            <p class="text-sm font-medium text-foreground">{{ participant.display_name }}</p>
+                            <p class="mt-0.5 truncate text-xs text-muted-foreground">{{ participant.invited_email }}</p>
+                        </div>
+                        <Badge
+                            variant="secondary"
+                            class="text-[11px] capitalize"
+                            :style="{ color: statusColorMap[participant.review_status] }"
+                        >
+                            {{ participantStatusLabels[participant.review_status] }}
+                        </Badge>
+                    </div>
+
+                    <div
+                        v-if="participant.review_status === 'accepted' && participant.qr_base64"
+                        class="border-success/30 bg-success/5 mt-4 flex flex-col items-center gap-3 rounded-xl border p-4 sm:flex-row sm:items-start"
+                    >
+                        <img
+                            :src="`data:image/png;base64,${participant.qr_base64}`"
+                            alt="Participant attendance QR code"
+                            width="200"
+                            height="200"
+                            class="rounded-xl border border-border bg-white p-2 shadow-sm"
+                        />
+                        <div class="w-full max-w-sm space-y-2 text-center sm:text-left">
+                            <p v-if="participant.registration_code" class="text-sm text-muted-foreground">
+                                Manual registration code
+                            </p>
+                            <p
+                                v-if="participant.registration_code"
+                                class="font-mono text-lg font-bold tracking-[0.12em] text-foreground"
+                            >
+                                {{ participant.registration_code }}
+                            </p>
+                            <p class="text-xs leading-relaxed text-muted-foreground">
+                                Show this QR at the entrance for this participant.
+                            </p>
+                        </div>
+                    </div>
+
+                    <p
+                        v-else-if="participant.review_status === 'pending'"
+                        class="mt-3 text-xs text-muted-foreground"
+                    >
+                        Check-in QR appears here after this participant is accepted.
+                    </p>
+                </div>
             </CardContent>
         </Card>
 

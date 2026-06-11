@@ -6,7 +6,7 @@ $path = __DIR__ . '/web';
 
 $finder = new Finder();
 
-$finder->files()->in("{$path}")->name('/^.*\.php$/');
+$finder->files()->in("{$path}")->name('/^.*\.php$/')->sortByName();
 
 // $files = File::glob("{$path}/{*.php,**/*.php,**/**/*.php}");
 

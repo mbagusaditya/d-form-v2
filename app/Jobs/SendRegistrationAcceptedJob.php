@@ -9,6 +9,7 @@ use App\Enums\FormAnswerReviewStatus;
 use App\Mail\RegistrationAcceptedMail;
 use App\Models\EmailLog;
 use App\Models\FormAnswer;
+use App\Services\Registration\FormAnswerRecipientResolver;
 use App\Services\Registration\RegistrationQrPngGenerator;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -25,8 +26,10 @@ class SendRegistrationAcceptedJob implements ShouldQueue
     ) {
     }
 
-    public function handle(RegistrationQrPngGenerator $qrGenerator): void
-    {
+    public function handle(
+        RegistrationQrPngGenerator $qrGenerator,
+        FormAnswerRecipientResolver $recipientResolver,
+    ): void {
         $submission = FormAnswer::query()
             ->with(['form.event', 'user'])
             ->find($this->formAnswerId);
@@ -57,26 +60,18 @@ class SendRegistrationAcceptedJob implements ShouldQueue
             return;
         }
 
-        $user = $submission->user;
-        if ($user === null) {
-            Log::warning('[SendRegistrationAcceptedJob] Submission has no user.', [
-                'form_answer_id' => $submission->id,
-            ]);
-
-            return;
-        }
-
+        $recipientEmail = $recipientResolver->email($submission);
         $event = $submission->form->event;
 
-        if ($user->email === '') {
+        if ($recipientEmail === null || $recipientEmail === '') {
             EmailLog::query()->create([
                 'form_answer_id' => $submission->id,
                 'event_id' => $event->id,
-                'user_id' => $user->id,
+                'user_id' => $recipientResolver->userIdForLog($submission),
                 'recipient_email' => '',
                 'status' => EmailLogStatus::Failed,
                 'notification_type' => EmailNotificationType::RegistrationAccepted,
-                'error_message' => 'User has no email address configured.',
+                'error_message' => 'No recipient email address configured.',
                 'sent_at' => null,
             ]);
 
@@ -92,15 +87,15 @@ class SendRegistrationAcceptedJob implements ShouldQueue
 
             $this->applyOutgoingEmailJitter();
 
-            Mail::to($user->email)->send(
+            Mail::to($recipientEmail)->send(
                 new RegistrationAcceptedMail($submission, $png, $registrationCode)
             );
 
             EmailLog::query()->create([
                 'form_answer_id' => $submission->id,
                 'event_id' => $event->id,
-                'user_id' => $user->id,
-                'recipient_email' => $user->email,
+                'user_id' => $recipientResolver->userIdForLog($submission),
+                'recipient_email' => $recipientEmail,
                 'status' => EmailLogStatus::Sent,
                 'notification_type' => EmailNotificationType::RegistrationAccepted,
                 'error_message' => null,
@@ -110,8 +105,8 @@ class SendRegistrationAcceptedJob implements ShouldQueue
             EmailLog::query()->create([
                 'form_answer_id' => $submission->id,
                 'event_id' => $event->id,
-                'user_id' => $user->id,
-                'recipient_email' => $user->email,
+                'user_id' => $recipientResolver->userIdForLog($submission),
+                'recipient_email' => $recipientEmail,
                 'status' => EmailLogStatus::Failed,
                 'notification_type' => EmailNotificationType::RegistrationAccepted,
                 'error_message' => $e->getMessage(),
@@ -122,7 +117,7 @@ class SendRegistrationAcceptedJob implements ShouldQueue
                 'notification_type' => EmailNotificationType::RegistrationAccepted->value,
                 'form_answer_id' => $submission->id,
                 'event_id' => $event->id,
-                'recipient_email' => $user->email,
+                'recipient_email' => $recipientEmail,
                 'exception_class' => $e::class,
                 'exception_message' => $e->getMessage(),
                 'exception' => $e,

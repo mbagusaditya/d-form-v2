@@ -5,6 +5,8 @@ namespace Tests\Feature\Dashboard\User;
 use App\Enums\EventFormVisibility;
 use App\Enums\EventStatus;
 use App\Enums\FormAnswerReviewStatus;
+use App\Enums\MemberConfirmationStatus;
+use App\Enums\RegistrationRole;
 use App\Mail\RegistrationAcceptedMail;
 use App\Mail\RegistrationConfirmationMail;
 use App\Mail\RegistrationRejectedMail;
@@ -207,6 +209,72 @@ class UserEventRegistrationPortalTest extends TestCase
                 ->where('registration.review_status', 'rejected')
                 ->where('registration.registration_code', null)
                 ->where('registration.qr_base64', fn ($v) => $v === null)
+            );
+    }
+
+    public function test_bundle_leader_sees_participant_qrs_on_registration_details(): void
+    {
+        $leader = $this->member();
+        $event = $this->publishedEvent();
+        $form = Form::factory()->create([
+            'event_id' => $event->id,
+            'title' => 'Bundle form',
+            'visible_for' => [EventFormVisibility::Public->value],
+            'closed_at' => now()->addDays(30),
+            'metadata' => ['registration_mode' => 'bundle', 'max_team_size' => 2],
+        ]);
+
+        $groupToken = 'BNDL'.uniqid();
+
+        FormAnswer::factory()->create([
+            'form_id' => $form->id,
+            'user_id' => $leader->id,
+            'registration_role' => RegistrationRole::Leader,
+            'member_confirmation_status' => MemberConfirmationStatus::Accepted,
+            'group_token' => $groupToken,
+            'review_status' => FormAnswerReviewStatus::Accepted,
+            'registration_code' => 'LEAD-001',
+            'answers' => ['full_name' => 'Leader Name'],
+        ]);
+
+        FormAnswer::factory()->create([
+            'form_id' => $form->id,
+            'user_id' => null,
+            'registration_role' => RegistrationRole::Member,
+            'member_confirmation_status' => MemberConfirmationStatus::Accepted,
+            'group_token' => $groupToken,
+            'invited_email' => 'guest-accepted@example.com',
+            'review_status' => FormAnswerReviewStatus::Accepted,
+            'registration_code' => 'GUEST-001',
+            'answers' => ['full_name' => 'Guest Accepted'],
+        ]);
+
+        FormAnswer::factory()->create([
+            'form_id' => $form->id,
+            'user_id' => null,
+            'registration_role' => RegistrationRole::Member,
+            'member_confirmation_status' => MemberConfirmationStatus::Accepted,
+            'group_token' => $groupToken,
+            'invited_email' => 'guest-pending@example.com',
+            'review_status' => FormAnswerReviewStatus::Pending,
+            'answers' => ['full_name' => 'Guest Pending'],
+        ]);
+
+        $this->actingAs($leader)->get($this->registrationUrl($event))
+            ->assertOk()
+            ->assertInertia(
+                fn ($page) => $page
+                    ->component('Dashboard/User/EventRegistration')
+                    ->where('form.registration_mode', 'bundle')
+                    ->where('registration.registration_role', 'leader')
+                    ->has('bundle_participants', 2)
+                    ->where('bundle_participants.0.invited_email', 'guest-accepted@example.com')
+                    ->where('bundle_participants.0.review_status', 'accepted')
+                    ->where('bundle_participants.0.registration_code', 'GUEST-001')
+                    ->where('bundle_participants.0.qr_base64', fn ($b64) => is_string($b64) && strlen($b64) > 50)
+                    ->where('bundle_participants.1.invited_email', 'guest-pending@example.com')
+                    ->where('bundle_participants.1.review_status', 'pending')
+                    ->where('bundle_participants.1.qr_base64', fn ($v) => $v === null)
             );
     }
 

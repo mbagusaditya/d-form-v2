@@ -12,6 +12,7 @@ use App\Models\FormField;
 use App\Models\User;
 use App\Services\Form\FormAccessGuard;
 use App\Services\Form\RulesBuilder;
+use App\Services\Registration\BundleGuestDuplicateChecker;
 use App\Services\Registration\BundleRegistrationSubmitter;
 use App\Services\Registration\BundleSubmissionRules;
 use App\Services\Registration\EventRegistrationCounter;
@@ -28,6 +29,7 @@ class FormSubmissionController extends Controller
         private TeamRegistrationSubmitter $teamRegistrationSubmitter,
         private BundleRegistrationSubmitter $bundleRegistrationSubmitter,
         private EventRegistrationCounter $registrationCounter,
+        private BundleGuestDuplicateChecker $bundleGuestDuplicateChecker,
     ) {
     }
 
@@ -208,19 +210,19 @@ class FormSubmissionController extends Controller
                 ->withInput();
         }
 
-        $memberUsers = [];
-
         foreach ($emails as $i => $email) {
-            $memberUser = User::query()->whereRaw('LOWER(email) = ?', [$email])->first();
-
-            if ($memberUser === null) {
+            try {
+                $this->bundleGuestDuplicateChecker->assertEmailAvailableForForm(
+                    $form,
+                    $email,
+                    "team_member_emails.{$i}",
+                );
+            } catch (\Illuminate\Validation\ValidationException $e) {
                 return redirect()
                     ->route('dashboard.events.forms.fill', ['event' => $event, 'form' => $form])
-                    ->withErrors(["team_member_emails.{$i}" => __('No account exists for this email. The teammate must register first.')])
+                    ->withErrors($e->errors())
                     ->withInput();
             }
-
-            $memberUsers[] = $memberUser;
         }
 
         $built  = $this->buildBundleAnswers($request, $fields, $form, $memberSlots);
@@ -230,7 +232,7 @@ class FormSubmissionController extends Controller
             $leaderUser,
             $built['leader'],
             $built['members'],
-            $memberUsers,
+            $emails,
             $isAdmin,
         );
 
@@ -239,14 +241,14 @@ class FormSubmissionController extends Controller
         $delaySeconds = (int) config('registration.email_send_delay_seconds', 7);
 
         foreach ($result['members'] as $index => $memberAnswer) {
-            SendTeamInvitationJob::dispatch($memberAnswer->id)
+            SendRegistrationConfirmationJob::dispatch($memberAnswer->id)
                 ->delay(now()->addSeconds($index * $delaySeconds))
                 ->afterCommit();
         }
 
         Inertia::flash('toast', [
             'type'    => 'success',
-            'message' => __('Your bundle registration has been submitted. Invitations were sent to participants.'),
+            'message' => __('Your bundle registration has been submitted. Confirmation emails were sent to all participants.'),
         ]);
 
         return $this->successRedirect($leaderUser, $event);

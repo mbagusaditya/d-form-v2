@@ -13,6 +13,7 @@ import { eventHeroBannerContainerClass } from '@/lib/eventBannerAspect';
 
 const props = defineProps<{
     event: IEvent;
+    memberPortalEventUrl: string;
 }>();
 
 const page = usePage();

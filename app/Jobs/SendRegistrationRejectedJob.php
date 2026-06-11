@@ -9,6 +9,7 @@ use App\Enums\FormAnswerReviewStatus;
 use App\Mail\RegistrationRejectedMail;
 use App\Models\EmailLog;
 use App\Models\FormAnswer;
+use App\Services\Registration\FormAnswerRecipientResolver;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Log;
@@ -24,7 +25,7 @@ class SendRegistrationRejectedJob implements ShouldQueue
     ) {
     }
 
-    public function handle(): void
+    public function handle(FormAnswerRecipientResolver $recipientResolver): void
     {
         $submission = FormAnswer::query()
             ->with(['form.event', 'user'])
@@ -47,26 +48,18 @@ class SendRegistrationRejectedJob implements ShouldQueue
             return;
         }
 
-        $user = $submission->user;
-        if ($user === null) {
-            Log::warning('[SendRegistrationRejectedJob] Submission has no user.', [
-                'form_answer_id' => $submission->id,
-            ]);
-
-            return;
-        }
-
+        $recipientEmail = $recipientResolver->email($submission);
         $event = $submission->form->event;
 
-        if ($user->email === '') {
+        if ($recipientEmail === null || $recipientEmail === '') {
             EmailLog::query()->create([
                 'form_answer_id' => $submission->id,
                 'event_id' => $event->id,
-                'user_id' => $user->id,
+                'user_id' => $recipientResolver->userIdForLog($submission),
                 'recipient_email' => '',
                 'status' => EmailLogStatus::Failed,
                 'notification_type' => EmailNotificationType::RegistrationRejected,
-                'error_message' => 'User has no email address configured.',
+                'error_message' => 'No recipient email address configured.',
                 'sent_at' => null,
             ]);
 
@@ -80,13 +73,13 @@ class SendRegistrationRejectedJob implements ShouldQueue
         try {
             $this->applyOutgoingEmailJitter();
 
-            Mail::to($user->email)->send(new RegistrationRejectedMail($submission));
+            Mail::to($recipientEmail)->send(new RegistrationRejectedMail($submission));
 
             EmailLog::query()->create([
                 'form_answer_id' => $submission->id,
                 'event_id' => $event->id,
-                'user_id' => $user->id,
-                'recipient_email' => $user->email,
+                'user_id' => $recipientResolver->userIdForLog($submission),
+                'recipient_email' => $recipientEmail,
                 'status' => EmailLogStatus::Sent,
                 'notification_type' => EmailNotificationType::RegistrationRejected,
                 'error_message' => null,
@@ -96,8 +89,8 @@ class SendRegistrationRejectedJob implements ShouldQueue
             EmailLog::query()->create([
                 'form_answer_id' => $submission->id,
                 'event_id' => $event->id,
-                'user_id' => $user->id,
-                'recipient_email' => $user->email,
+                'user_id' => $recipientResolver->userIdForLog($submission),
+                'recipient_email' => $recipientEmail,
                 'status' => EmailLogStatus::Failed,
                 'notification_type' => EmailNotificationType::RegistrationRejected,
                 'error_message' => $e->getMessage(),
@@ -108,7 +101,7 @@ class SendRegistrationRejectedJob implements ShouldQueue
                 'notification_type' => EmailNotificationType::RegistrationRejected->value,
                 'form_answer_id' => $submission->id,
                 'event_id' => $event->id,
-                'recipient_email' => $user->email,
+                'recipient_email' => $recipientEmail,
                 'exception_class' => $e::class,
                 'exception_message' => $e->getMessage(),
                 'exception' => $e,

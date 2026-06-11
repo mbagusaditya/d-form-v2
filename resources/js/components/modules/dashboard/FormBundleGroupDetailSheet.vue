@@ -43,7 +43,7 @@ function participantEmail(member: IBundleSubmissionMember) {
 }
 
 function participantName(member: IBundleSubmissionMember) {
-    return member.user?.name ?? member.invited_email ?? 'Tanpa nama'
+    return member.display_name ?? member.user?.name ?? member.invited_email ?? 'Tanpa nama'
 }
 
 function openParticipantDetail(member: IBundleSubmissionMember) {

@@ -114,6 +114,7 @@ declare global {
     }
 
     interface IBundleSubmissionMember extends IFormSubmission {
+        display_name?: string
         invited_email?: string | null
         can_open_detail: boolean
         can_review: boolean
