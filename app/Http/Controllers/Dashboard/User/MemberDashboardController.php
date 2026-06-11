@@ -28,6 +28,7 @@ class MemberDashboardController extends Controller
         $formAnswers = FormAnswer::query()
             ->where('user_id', $userId)
             ->excludeTerminatedInvitationMembers()
+            ->excludeRejectedSubmissions()
             ->with(['form.event', 'user:id,name,email,avatar'])
             ->get();
 

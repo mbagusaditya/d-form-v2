@@ -12,10 +12,12 @@ use App\Models\Form;
 use App\Models\FormAnswer;
 use App\Services\Registration\EventRegistrationCounter;
 use App\Services\Registration\RegistrationCodeIssuer;
+use App\Services\Registration\RegistrationGroupPeers;
 use App\Enums\RegistrationRole;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -31,6 +33,7 @@ class FormAnswerReviewController extends Controller
         FormAnswer $formAnswer,
         RegistrationCodeIssuer $codeIssuer,
         EventRegistrationCounter $registrationCounter,
+        RegistrationGroupPeers $groupPeers,
     ): JsonResponse {
         $this->authorize('review', $formAnswer);
 
@@ -64,7 +67,15 @@ class FormAnswerReviewController extends Controller
             ], 422);
         }
 
-        $payload = DB::transaction(function () use ($request, $form, $formAnswer, $newStatus, $codeIssuer, $registrationCounter): array {
+        $payload = DB::transaction(function () use (
+            $request,
+            $form,
+            $formAnswer,
+            $newStatus,
+            $codeIssuer,
+            $registrationCounter,
+            $groupPeers,
+        ): array {
             /** @var FormAnswer|null $locked */
             $locked = FormAnswer::query()
                 ->whereKey($formAnswer->id)
@@ -83,6 +94,16 @@ class FormAnswerReviewController extends Controller
                 ];
             }
 
+            if ($newStatus === FormAnswerReviewStatus::Rejected) {
+                return $this->rejectWithCascade(
+                    $request,
+                    $form,
+                    $locked,
+                    $registrationCounter,
+                    $groupPeers,
+                );
+            }
+
             $before = $locked->replicate();
 
             $locked->forceFill([
@@ -91,19 +112,12 @@ class FormAnswerReviewController extends Controller
                 'reviewed_by' => (string) $request->user()->id,
             ]);
 
-            if ($newStatus === FormAnswerReviewStatus::Accepted) {
-                $this->saveAcceptedWithUniqueRegistrationCode($locked, $codeIssuer);
-            } else {
-                $locked->save();
-            }
-
-            if ($newStatus === FormAnswerReviewStatus::Rejected) {
-                $registrationCounter->releaseIfStoppedOccupying($before, $locked->fresh());
-            }
+            $this->saveAcceptedWithUniqueRegistrationCode($locked, $codeIssuer);
 
             return [
                 'kind' => 'ok',
                 'answer' => $locked->fresh(),
+                'rejected_ids' => collect(),
             ];
         });
 
@@ -117,11 +131,18 @@ class FormAnswerReviewController extends Controller
         /** @var FormAnswer $answer */
         $answer = $payload['answer'];
 
+        /** @var Collection<int, string> $rejectedIds */
+        $rejectedIds = $payload['rejected_ids'];
+
         if ($newStatus === FormAnswerReviewStatus::Accepted) {
             SendRegistrationAcceptedJob::dispatch($answer->id)->afterCommit();
         } else {
-            SendRegistrationRejectedJob::dispatch($answer->id)->afterCommit();
+            foreach ($rejectedIds as $rejectedId) {
+                SendRegistrationRejectedJob::dispatch($rejectedId)->afterCommit();
+            }
         }
+
+        $cascadedRejections = max(0, $rejectedIds->count() - 1);
 
         return response()->json([
             'id' => $answer->id,
@@ -129,7 +150,64 @@ class FormAnswerReviewController extends Controller
             'reviewed_at' => $answer->reviewed_at?->toIso8601String(),
             'reviewed_by' => $answer->reviewed_by,
             'registration_code' => $answer->registration_code,
+            'cascaded_rejections' => $cascadedRejections,
         ]);
+    }
+
+    /**
+     * @return array{kind: string, answer: FormAnswer, rejected_ids: Collection<int, string>}
+     */
+    private function rejectWithCascade(
+        Request $request,
+        Form $form,
+        FormAnswer $locked,
+        EventRegistrationCounter $registrationCounter,
+        RegistrationGroupPeers $groupPeers,
+    ): array {
+        $peerIds = $groupPeers->peersNotYetRejected($form, $locked)
+            ->pluck('id')
+            ->map(fn ($id) => (string) $id)
+            ->unique()
+            ->values();
+
+        $rejectedIds = collect();
+        $primaryAnswer = $locked;
+
+        foreach ($peerIds as $peerId) {
+            /** @var FormAnswer|null $peer */
+            $peer = FormAnswer::query()
+                ->whereKey($peerId)
+                ->where('form_id', $form->id)
+                ->lockForUpdate()
+                ->first();
+
+            if ($peer === null || $peer->review_status === FormAnswerReviewStatus::Rejected) {
+                continue;
+            }
+
+            $before = $peer->replicate();
+
+            $peer->forceFill([
+                'review_status' => FormAnswerReviewStatus::Rejected,
+                'reviewed_at' => now(),
+                'reviewed_by' => (string) $request->user()->id,
+            ]);
+            $peer->save();
+
+            $registrationCounter->releaseIfStoppedOccupying($before, $peer->fresh());
+
+            $rejectedIds->push((string) $peer->id);
+
+            if ((string) $peer->id === (string) $locked->id) {
+                $primaryAnswer = $peer->fresh();
+            }
+        }
+
+        return [
+            'kind' => 'ok',
+            'answer' => $primaryAnswer->fresh(),
+            'rejected_ids' => $rejectedIds,
+        ];
     }
 
     private function saveAcceptedWithUniqueRegistrationCode(FormAnswer $answer, RegistrationCodeIssuer $issuer): void
