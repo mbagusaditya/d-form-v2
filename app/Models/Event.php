@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -38,7 +39,8 @@ class Event extends Model
         'price',
         'session',
         'status',
-        'category'
+        'category',
+        'created_by'
     ];
 
     protected function casts(): array
@@ -95,6 +97,11 @@ class Event extends Model
     public function forms(): HasMany
     {
         return $this->hasMany(Form::class);
+    }
+
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
     }
 
     /**

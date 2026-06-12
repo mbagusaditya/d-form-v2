@@ -6,6 +6,7 @@ use App\Enums\EventRegistrationStatus;
 use App\Enums\EventStatus;
 use App\Http\Resources\EventResource;
 use App\Models\Event;
+use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\UploadedFile;
@@ -57,12 +58,17 @@ class EventService
     /**
      * @param  array{search: string, filter: array{categories: array, sessions: array, statuses: array, showTrashed: bool, timeline: string}, sort: array{by: string, order: string}, per_page: int}  $queryInput
      */
-    public function paginateForAdminIndex(array $queryInput, int $page): LengthAwarePaginator
+    public function paginateForAdminIndex(array $queryInput, int $page, User $user): LengthAwarePaginator
     {
         $perPage = max(1, min(100, (int) ($queryInput['per_page'] ?? 10)));
         $search = $queryInput['search'] ?? '';
         $filter = $queryInput['filter'] ?? [];
         $sort = $queryInput['sort'] ?? ['by' => 'title', 'order' => 'asc'];
+
+        // experiment
+        $isSuperAdmin = $user->hasRole('super-admin');
+        $userId = $user->id;
+        // end experiment
 
         $hashedQuery = md5(json_encode([
             'filter' => $filter,
@@ -73,11 +79,12 @@ class EventService
                 'page' => $page,
             ],
             'buster' => Cache::get('events:list:cache:buster', 0),
+            'userId' => $userId
         ]));
 
         return $this->rememberList(
             "list-page:events:{$hashedQuery}",
-            function () use ($filter, $sort, $search, $perPage, $page) {
+            function () use ($filter, $sort, $search, $perPage, $page, $isSuperAdmin, $userId) {
                 $query = Event::query();
 
                 if (! empty($filter['showTrashed'])) {
@@ -94,6 +101,10 @@ class EventService
 
                 if (count($filter['statuses'] ?? []) > 0) {
                     $query->whereIn('status', $filter['statuses']);
+                }
+
+                if (!$isSuperAdmin) {
+                    $query->where('created_by', $userId)->orWhereNull('created_by');
                 }
 
                 $showTrashed = ! empty($filter['showTrashed']);
@@ -129,7 +140,7 @@ class EventService
     /**
      * @param  array<string, mixed>  $data
      */
-    public function create(array $data, UploadedFile $banner): Event
+    public function create(array $data, UploadedFile $banner, User $user): Event
     {
         unset($data['banner']);
 
@@ -141,6 +152,7 @@ class EventService
         $data['registered_count'] = 0;
         $data['banner'] = $path;
         $data['status'] = $status;
+        $data['created_by'] = $user->id;
 
         return Event::query()->create($data);
     }

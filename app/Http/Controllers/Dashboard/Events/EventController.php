@@ -32,7 +32,7 @@ class EventController extends Controller
         $validated = $request->validated();
         $page = $request->integer('page', 1);
 
-        $paginator = $this->eventService->paginateForAdminIndex($validated, $page);
+        $paginator = $this->eventService->paginateForAdminIndex($validated, $page, auth()->guard('web')->user());
 
         $paginator->setCollection(
             $paginator->getCollection()->map(
@@ -61,7 +61,7 @@ class EventController extends Controller
         $data = $request->validated();
         $banner = $request->file('banner');
 
-        $event = $this->eventService->create($data, $banner);
+        $event = $this->eventService->create($data, $banner, auth()->guard('web')->user());
 
         Inertia::flash('toast', [
             'message' => __('messages.event.create.success'),

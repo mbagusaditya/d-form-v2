@@ -27,6 +27,14 @@ class DatabaseSeeder extends Seeder
         );
         $admin->syncRoles(['admin']);
 
+        if (env('APP_ENV') === 'local') {
+            $admin2 = User::query()->firstOrCreate(
+                ['email' => 'admin2@gmail.com'],
+                ['name' => 'admin 2', 'password' => 'admin2 password']
+            );
+            $admin2->syncRoles(['admin']);
+        }
+
         $superAdmin = User::query()->firstOrCreate(
             ['email' => 'superadmin@gmail.com'],
             ['name' => 'super admin', 'password' => 'superadmin password'],
